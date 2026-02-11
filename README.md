@@ -114,6 +114,14 @@ This encodes the input text, then runs diffusion decoding to reconstruct it from
 | index.html | Demo frontend |
 | configs/ | Encoder-specific training configurations |
 
-## License
+## Citation
 
-Apache 2.0
+```bibtex
+@software{xiao2025embeddinginversion,
+  author       = {Xiao, Han},
+  title        = {Embedding Inversion via Conditional Masked Diffusion},
+  year         = {2025},
+  url          = {https://github.com/hanxiao/embedding-inversion-demo},
+  note         = {Live demo: https://embedding-inversion-demo.jina.ai}
+}
+```
