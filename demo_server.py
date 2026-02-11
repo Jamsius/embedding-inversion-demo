@@ -116,6 +116,15 @@ def last_token_pool(hidden, attention_mask):
     return hidden[torch.arange(hidden.shape[0], device=hidden.device), seq_lens]
 
 
+def mean_pool(hidden, attention_mask):
+    m = attention_mask.unsqueeze(-1).expand(hidden.size()).float()
+    return (hidden * m).sum(1) / m.sum(1).clamp(min=1e-9)
+
+def get_pool_fn(model_name):
+    if "qwen" in model_name.lower():
+        return last_token_pool
+    return mean_pool
+
 # ---------------------------------------------------------------------------
 # Globals - Multi-model support
 # ---------------------------------------------------------------------------
@@ -269,7 +278,8 @@ async def encode(req: EncodeRequest):
             padding=True, truncation=True, max_length=512
         ).to(DEVICE)
         out = m["encoder_model"](**inputs)
-        emb = last_token_pool(out.last_hidden_state, inputs["attention_mask"])
+        pool_fn = get_pool_fn(m["config"]["model"]["encoder_model"])
+        emb = pool_fn(out.last_hidden_state, inputs["attention_mask"])
         emb = F.normalize(emb, dim=-1)
     return EncodeResponse(embedding=emb[0].cpu().tolist(), text=req.text)
 
@@ -291,8 +301,8 @@ async def decode(req: DecodeRequest):
         embedding = torch.tensor([req.embedding], device=DEVICE, dtype=torch.float32)
         embedding = F.normalize(embedding, dim=-1)
 
-        L = config["model"]["max_seq_len"]
-        mask_id = config["model"]["mask_token_id"]
+        L = m["config"]["model"]["max_seq_len"]
+        mask_id = m["config"]["model"]["mask_token_id"]
         steps = max(1, min(req.steps, L))
         per_step = max(1, L // steps)
 
@@ -353,7 +363,8 @@ async def decode(req: DecodeRequest):
                 padding=True, truncation=True, max_length=512
             ).to(DEVICE)
             out2 = encoder_model(**inputs2)
-            emb2 = last_token_pool(out2.last_hidden_state, inputs2["attention_mask"])
+            pool_fn2 = get_pool_fn(m["config"]["model"]["encoder_model"])
+            emb2 = pool_fn2(out2.last_hidden_state, inputs2["attention_mask"])
             emb2 = F.normalize(emb2, dim=-1)
             cos_sim = F.cosine_similarity(embedding, emb2).item()
 
