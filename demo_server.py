@@ -21,7 +21,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import AutoModel, AutoTokenizer
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
@@ -131,6 +133,44 @@ def get_pool_fn(model_name):
 # ---------------------------------------------------------------------------
 
 app = FastAPI()
+
+# CORS: only allow our domain
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://embedding-inversion-demo.jina.ai"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
+
+ALLOWED_ORIGINS = {
+    "https://embedding-inversion-demo.jina.ai",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+}
+
+@app.middleware("http")
+async def check_browser_request(request: Request, call_next):
+    # Skip health/queue checks
+    if request.url.path in ("/health", "/queue", "/", "/favicon.ico"):
+        return await call_next(request)
+    
+    # Check origin or referer
+    origin = request.headers.get("origin", "")
+    referer = request.headers.get("referer", "")
+    
+    origin_ok = any(origin.startswith(o) for o in ALLOWED_ORIGINS) if origin else False
+    referer_ok = any(referer.startswith(o) for o in ALLOWED_ORIGINS) if referer else False
+    
+    # Also allow requests with no origin/referer (same-origin page load)
+    is_page_load = not origin and not referer and request.method == "GET"
+    
+    if not origin_ok and not referer_ok and not is_page_load:
+        return JSONResponse(
+            status_code=403,
+            content={"error": "API access not allowed. Use the web interface."}
+        )
+    
+    return await call_next(request)
 
 # Each model has its own: MODEL, CONFIG, ENCODER_MODEL, ENCODER_TOK, DECODER_TOK
 MODELS = {}  # model_key -> dict with model, config, encoder_model, encoder_tok, decoder_tok
