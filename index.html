@@ -7,86 +7,105 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#fff;--surface:#f9f9fb;--border:#e8e8ec;
-  --text:#111;--dim:#888;--accent:#6c5ce7;--accent-light:#a29bfe;
-  --green:#00b894;--mask:#d0d0d8;
-  --mono:'SF Mono','Fira Code','JetBrains Mono','Cascadia Code',monospace;
-  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --radius:10px;
+  --bg:#fafafa;--surface:#fff;--border:#d8d8d8;
+  --text:#1a1a2e;--dim:#666;--accent:#5b5fc7;
+  --green:#00b894;--mask:#c0c0c0;
+  --mono:"Berkeley Mono","JetBrains Mono","Fira Code",monospace;
+  --radius:4px;
 }
 html{font-size:15px}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
 ::selection{background:var(--accent);color:#fff}
 
-.wrap{max-width:720px;margin:0 auto;padding:3rem 1.5rem 4rem}
+.wrap{max-width:760px;margin:0 auto;padding:2.5rem 1.5rem 3rem}
 
 header{text-align:center;margin-bottom:2.5rem}
-h1{font-size:1.8rem;font-weight:700;letter-spacing:-0.02em;color:var(--text)}
-.sub{color:var(--dim);font-size:.85rem;margin-top:.3rem;font-family:var(--mono)}
+h1{font-size:1.6rem;font-weight:600;letter-spacing:-0.01em;color:var(--text)}
+.sub{color:var(--dim);font-size:.8rem;margin-top:.4rem}
+.sub a{color:var(--dim);text-decoration:underline;transition:color .2s}
+.sub a:hover{color:var(--accent)}
 
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.25rem}
-.card-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:.75rem;font-weight:600}
+/* Fieldsets - TurboPuffer style */
+fieldset{
+  background:var(--surface);
+  border:2px dashed var(--border);
+  border-radius:var(--radius);
+  padding:1.5rem;
+  margin-bottom:1.5rem;
+}
+legend{
+  font-size:.65rem;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--dim);
+  font-weight:600;
+  padding:0 .5rem;
+}
 
-/* Model selector */
+/* Model selector - tabs style */
 .model-selector{
-  display:flex;gap:8px;margin-bottom:1rem;
+  display:inline-flex;gap:0;margin-bottom:1.2rem;
+  border:1.5px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;
 }
 .model-btn{
-  flex:1;padding:.5rem 1rem;
-  background:#fff;color:var(--text);
-  border:1.5px solid var(--border);border-radius:20px;
-  font-family:var(--sans);font-size:.8rem;font-weight:600;
+  padding:.5rem 1.2rem;
+  background:transparent;color:var(--text);
+  border:none;border-right:1.5px solid var(--border);
+  font-family:var(--mono);font-size:.75rem;font-weight:600;
   cursor:pointer;transition:all .2s;text-align:center;
+  letter-spacing:.02em;
 }
-.model-btn:hover{border-color:var(--accent-light)}
+.model-btn:last-child{border-right:none}
+.model-btn:hover{background:#f5f5f5}
 .model-btn.active{
   background:var(--accent);color:#fff;
-  border-color:var(--accent);
 }
 
 /* input area */
 .input-row{position:relative;display:flex;align-items:center}
 .input-row input{
-  width:100%;padding:.7rem 2.8rem .7rem .9rem;
-  border:1px solid var(--border);border-radius:8px;
-  font-family:var(--mono);font-size:.9rem;
-  background:#fff;color:var(--text);outline:none;
+  width:100%;padding:.65rem 2.5rem .65rem .8rem;
+  border:1.5px solid var(--border);border-radius:var(--radius);
+  font-family:var(--mono);font-size:.85rem;
+  background:var(--surface);color:var(--text);outline:none;
   transition:border-color .2s;
 }
 .input-row input:focus{border-color:var(--accent)}
-.input-row input::placeholder{color:#bbb}
+.input-row input::placeholder{color:#aaa;font-style:italic}
 .dice{
   position:absolute;right:8px;top:50%;transform:translateY(-50%);
-  background:none;border:none;cursor:pointer;font-size:1.2rem;
-  opacity:.5;transition:opacity .15s;
+  background:none;border:none;cursor:pointer;font-size:1.1rem;
+  opacity:.4;transition:opacity .15s;
 }
-.dice:hover{opacity:1}
+.dice:hover{opacity:.8}
 
-/* buttons */
+/* buttons - outlined style */
 .btn{
-  display:inline-block;padding:.6rem 1.6rem;
-  background:var(--accent);color:#fff;border:none;border-radius:8px;
-  font-family:var(--sans);font-size:.85rem;font-weight:600;
-  cursor:pointer;transition:all .15s;margin-top:.75rem;
-}
-.btn:hover{background:#5b4bd5}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn-outline{
+  display:inline-block;padding:.55rem 1.4rem;
   background:transparent;color:var(--accent);
-  border:1.5px solid var(--accent);
+  border:1.5px solid var(--accent);border-radius:var(--radius);
+  font-family:var(--mono);font-size:.8rem;font-weight:600;
+  cursor:pointer;transition:all .15s;margin-top:.8rem;
+  letter-spacing:.02em;
 }
-.btn-outline:hover{background:var(--accent);color:#fff}
+.btn:hover{background:var(--accent);color:#fff}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn.btn-primary{
+  background:var(--accent);color:#fff;
+}
+.btn.btn-primary:hover{background:#4a4ab0}
 
 /* embedding viz */
 #embed-result{display:none}
 .stats-row{
-  display:flex;gap:1.5rem;font-family:var(--mono);font-size:.8rem;
-  color:var(--dim);margin-bottom:.75rem;
+  display:flex;gap:1.5rem;font-size:.75rem;
+  color:var(--dim);margin-bottom:.8rem;flex-wrap:wrap;
 }
 .stats-row span{white-space:nowrap}
-.stats-row .val{color:var(--text);font-weight:600}
+.stats-row .val{color:var(--text);font-weight:600;margin-left:.3rem}
 
-canvas#histogram{width:100%;height:120px;border-radius:6px;background:#fff;border:1px solid var(--border)}
+canvas#histogram{width:100%;height:110px;border-radius:var(--radius);background:var(--surface);border:1.5px solid var(--border)}
 
 /* invert section */
 #invert-section{display:none}
@@ -94,45 +113,46 @@ canvas#histogram{width:100%;height:120px;border-radius:6px;background:#fff;borde
 
 /* token grid */
 .token-grid{
-  display:flex;flex-wrap:wrap;gap:6px;
-  font-family:var(--mono);font-size:.85rem;
-  margin-top:.75rem;
+  display:flex;flex-wrap:wrap;gap:5px;
+  font-size:.8rem;
+  margin-top:.8rem;
 }
 .token{
-  padding:4px 8px;border-radius:5px;
+  padding:3px 7px;border-radius:3px;
   transition:all .25s ease;
   border:1px solid transparent;
 }
-.token.masked{background:var(--surface);color:var(--mask);border-color:var(--border)}
-.token.revealed{background:#fff;color:var(--text);font-weight:600;border-color:var(--border)}
+.token.masked{background:#f0f0f0;color:var(--mask);border-color:var(--border)}
+.token.revealed{background:var(--surface);color:var(--text);font-weight:600;border-color:var(--border)}
 .token.just-changed{
-  background:#f0edff;color:var(--accent);font-weight:700;
-  border-color:var(--accent-light);
+  background:#eeeeff;color:var(--accent);font-weight:700;
+  border-color:var(--accent);
   animation:pop .3s ease;
 }
-@keyframes pop{0%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes pop{0%{transform:scale(1.12)}100%{transform:scale(1)}}
 
 /* comparison */
-.compare{margin-top:1rem;font-size:.85rem}
-.compare-row{display:flex;gap:.5rem;margin-bottom:.4rem;align-items:baseline}
-.compare-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);width:90px;flex-shrink:0;font-weight:600}
-.compare-text{font-family:var(--mono);color:var(--text)}
+.compare{margin-top:1.2rem;font-size:.8rem}
+.compare-row{display:flex;gap:.6rem;margin-bottom:.5rem;align-items:baseline}
+.compare-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);width:85px;flex-shrink:0;font-weight:600}
+.compare-text{color:var(--text)}
 
 .metric{
   display:inline-flex;align-items:center;gap:.4rem;
-  font-family:var(--mono);font-size:.8rem;color:var(--dim);
-  margin-top:.5rem;
+  font-size:.75rem;color:var(--dim);
+  margin-top:.6rem;
 }
-.metric .val{color:var(--green);font-weight:700;font-size:.95rem}
+.metric .val{color:var(--green);font-weight:700;font-size:.9rem}
 
-.step-info{font-family:var(--mono);font-size:.75rem;color:var(--dim);margin-top:.5rem}
+.step-info{font-size:.7rem;color:var(--dim);margin-top:.6rem}
 
 /* progress */
-.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:.5rem;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .15s;width:0%}
+.progress-bar{height:2px;background:#e5e5e5;border-radius:1px;margin-top:.6rem;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:1px;transition:width .15s;width:0%}
 
-footer{text-align:center;margin-top:2rem;font-size:.75rem;color:var(--dim)}
-footer a{color:var(--accent);text-decoration:none}
+footer{text-align:center;margin-top:2.5rem;font-size:.7rem;color:var(--dim);border-top:1px solid var(--border);padding-top:1.5rem}
+footer a{color:var(--dim);text-decoration:underline}
+footer a:hover{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -141,12 +161,14 @@ footer a{color:var(--accent);text-decoration:none}
 <header>
   <h1>Embedding Inversion</h1>
   <div class="sub" id="header-sub">Qwen3-Embedding | Conditional Masked Diffusion</div>
-  <div style="margin-top:0.5rem"><a href="https://github.com/hanxiao/embedding-inversion-demo" style="color:#888;font-size:0.85rem;text-decoration:none" target="_blank">github.com/hanxiao/embedding-inversion-demo</a></div>
+  <div class="sub" style="margin-top:0.3rem">
+    <a href="https://github.com/hanxiao/embedding-inversion-demo" target="_blank">github.com/hanxiao/embedding-inversion-demo</a>
+  </div>
 </header>
 
 <!-- Step 1: Input & Embed -->
-<div class="card">
-  <div class="card-label">Input</div>
+<fieldset>
+  <legend>Input</legend>
   
   <!-- Model selector -->
   <div class="model-selector">
@@ -158,12 +180,12 @@ footer a{color:var(--accent);text-decoration:none}
     <input type="text" id="input-text" placeholder="Enter a sentence..." />
     <button class="dice" onclick="randomSentence()" title="Random sentence">&#x1F3B2;</button>
   </div>
-  <button class="btn" id="btn-embed" onclick="doEmbed()">Embed</button>
-</div>
+  <button class="btn btn-primary" id="btn-embed" onclick="doEmbed()">Embed</button>
+</fieldset>
 
 <!-- Embedding Result -->
-<div class="card" id="embed-result">
-  <div class="card-label">Embedding</div>
+<fieldset id="embed-result">
+  <legend>Embedding</legend>
   <div class="stats-row">
     <span>dim <span class="val" id="stat-dim">-</span></span>
     <span>min <span class="val" id="stat-min">-</span></span>
@@ -171,13 +193,13 @@ footer a{color:var(--accent);text-decoration:none}
     <span>norm <span class="val" id="stat-norm">-</span></span>
   </div>
   <canvas id="histogram"></canvas>
-</div>
+</fieldset>
 
 <!-- Step 2: Invert -->
 <div id="invert-section">
-  <div class="card">
-    <div class="card-label">Diffusion Decoding</div>
-    <button class="btn btn-outline" id="btn-invert" onclick="doInvert()">Invert</button>
+  <fieldset>
+    <legend>Diffusion Decoding</legend>
+    <button class="btn" id="btn-invert" onclick="doInvert()">Invert</button>
     <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     <div class="step-info" id="step-info"></div>
 
@@ -199,11 +221,11 @@ footer a{color:var(--accent);text-decoration:none}
         cosine similarity <span class="val" id="cosine-sim">-</span>
       </div>
     </div>
-  </div>
+  </fieldset>
 </div>
 
 <footer>
-  <a href="https://github.com/hanxiao/embedding-inversion-demo">github</a>
+  © 2025 Han Xiao
 </footer>
 
 </div>
@@ -320,9 +342,9 @@ function drawHistogram(arr) {
     const y = H - pad.b - h;
 
     const t = i / nBins;
-    const r2 = Math.round(108 + t * 50);
-    const g = Math.round(92 + t * 40);
-    const b = Math.round(231 + t * 10);
+    const r2 = Math.round(91 + t * 40);
+    const g = Math.round(95 + t * 40);
+    const b = Math.round(199 + t * 30);
     ctx.fillStyle = `rgb(${r2},${g},${b})`;
     ctx.fillRect(x, y, pw - 1, h);
   }
