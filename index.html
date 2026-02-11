@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Embedding Inversion with Qwen3-Embedding</title>
+<title>Embedding Inversion</title>
 <style>
   :root {
-    --bg: #08080d;
-    --surface: #0e0e16;
-    --border: rgba(255,255,255,0.07);
-    --text: #d0d0d8;
-    --text-dim: #5a5a6e;
+    --bg: #ffffff;
+    --surface: #fafafa;
+    --border: #e5e5e5;
+    --text: #1a1a1a;
+    --text-dim: #737373;
     --accent: #7c6aef;
-    --accent2: #a78bfa;
-    --glow: rgba(124,106,239,0.55);
-    --green: #34d399;
-    --mask-bg: rgba(255,255,255,0.04);
+    --accent2: #9061f0;
+    --glow: rgba(124,106,239,0.25);
+    --green: #10b981;
+    --mask-bg: #f5f5f5;
     --mono: 'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace;
     --sans: 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   }
@@ -56,16 +56,41 @@
     letter-spacing:.08em; color:var(--text-dim); margin-bottom:.75rem;
   }
 
-  /* input row */
+  /* input row with dice icon */
   .input-row { display:flex; gap:.6rem; }
-  .input-row input {
-    flex:1; background:rgba(255,255,255,0.04); border:1px solid var(--border);
-    border-radius:8px; padding:.65rem .9rem; color:#fff;
-    font-family:var(--mono); font-size:.9rem;
+  .input-wrapper {
+    flex:1;
+    position:relative;
+    display:flex;
+    align-items:center;
+  }
+  .input-wrapper input {
+    width:100%;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:.65rem 2.5rem .65rem .9rem;
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:.9rem;
     transition: border-color .2s;
   }
-  .input-row input:focus { outline:none; border-color:var(--accent); }
-  .input-row input::placeholder { color:var(--text-dim); }
+  .input-wrapper input:focus { outline:none; border-color:var(--accent); }
+  .input-wrapper input::placeholder { color:var(--text-dim); }
+  .dice-btn {
+    position:absolute;
+    right:8px;
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-size:1.2rem;
+    padding:4px;
+    line-height:1;
+    opacity:.5;
+    transition: opacity .2s, transform .15s;
+  }
+  .dice-btn:hover { opacity:1; }
+  .dice-btn:active { transform:scale(.9); }
 
   /* buttons */
   .btn {
@@ -81,16 +106,14 @@
   }
   .btn-primary:hover { box-shadow:0 4px 20px rgba(124,106,239,.4); }
   .btn-primary:disabled { opacity:.5; cursor:default; box-shadow:none; }
-  .btn-ghost {
-    background:rgba(255,255,255,0.06); color:var(--text);
-  }
-  .btn-ghost:hover { background:rgba(255,255,255,0.1); }
 
-  /* embedding viz */
+  /* embedding viz - histogram */
   .emb-row { display:flex; gap:1.2rem; align-items:stretch; flex-wrap:wrap; }
   .emb-canvas-wrap {
-    flex:1; min-width:200px; height:52px;
-    background:rgba(0,0,0,.25); border-radius:6px; overflow:hidden;
+    flex:1; min-width:200px; height:180px;
+    background:#fff; border:1px solid var(--border); border-radius:8px;
+    padding:12px;
+    overflow:hidden;
   }
   #embCanvas { width:100%; height:100%; display:block; }
   .emb-stats {
@@ -98,11 +121,11 @@
     min-width:140px;
   }
   .stat { font-size:.75rem; color:var(--text-dim); }
-  .stat span { color:var(--accent2); font-family:var(--mono); font-weight:600; }
+  .stat span { color:var(--accent); font-family:var(--mono); font-weight:600; }
 
   /* progress */
   .progress-track {
-    height:3px; background:rgba(255,255,255,0.06);
+    height:3px; background:#f0f0f0;
     border-radius:2px; overflow:hidden; margin-bottom:1rem;
   }
   .progress-fill {
@@ -132,16 +155,16 @@
   }
   .tok.masked {
     background:var(--mask-bg); color:var(--text-dim);
-    border-color:rgba(255,255,255,0.05);
+    border-color:#e0e0e0;
   }
   .tok.revealed {
-    background:rgba(124,106,239,0.12); color:#e0d8ff;
-    border-color:rgba(124,106,239,0.25);
+    background:#f3f0ff; color:var(--text);
+    border-color:#d8d0ff;
   }
   .tok.changed {
     animation: pop .5s ease-out;
-    background:rgba(124,106,239,0.3);
-    color:#fff;
+    background:#e8e0ff;
+    color:var(--text);
     border-color:var(--accent);
     box-shadow:0 0 14px var(--glow);
   }
@@ -152,10 +175,10 @@
 
   /* decoded text */
   .decoded-box {
-    background:rgba(0,0,0,.3); border:1px solid var(--border);
+    background:#fff; border:1px solid var(--border);
     border-radius:8px; padding:.85rem 1rem;
     font-family:var(--mono); font-size:.9rem; line-height:1.6;
-    color: #c8c0f0;
+    color: var(--text);
     min-height:2.5rem;
     word-break: break-word;
   }
@@ -164,7 +187,7 @@
   .metrics { display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap; }
   .metric-card {
     flex:1; min-width:140px;
-    background:rgba(255,255,255,0.02);
+    background:#fff;
     border:1px solid var(--border);
     border-radius:8px; padding:.85rem 1rem;
   }
@@ -174,7 +197,7 @@
   }
   .metric-value {
     font-size:1.3rem; font-weight:700; font-family:var(--mono);
-    color:var(--accent2);
+    color:var(--accent);
   }
   .metric-value.sim { color:var(--green); }
   .metric-value.small {
@@ -192,7 +215,7 @@
   @keyframes spin { to { transform:rotate(360deg); } }
   .spinner {
     display:inline-block; width:14px; height:14px;
-    border:2px solid rgba(255,255,255,.15);
+    border:2px solid #e5e5e5;
     border-top-color:var(--accent);
     border-radius:50%; animation:spin .7s linear infinite;
     vertical-align:middle; margin-right:6px;
@@ -210,16 +233,18 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Embedding Inversion with Qwen3-Embedding</h1>
-    <div class="tagline">Encode a sentence into a 1024-d vector using Qwen3-Embedding, then watch diffusion decode it back, token by token.</div>
+    <h1>Embedding Inversion</h1>
+    <div class="tagline">Encode a sentence into a 1024-d vector, then watch diffusion decode it back, token by token.</div>
   </header>
 
   <!-- Input -->
   <div class="card">
     <div class="card-label">Input</div>
     <div class="input-row">
-      <input type="text" id="inp" placeholder="Type a sentence..." value="Stars shine brightest in the darkest nights" spellcheck="false">
-      <button class="btn btn-ghost" onclick="doRandom()">Random</button>
+      <div class="input-wrapper">
+        <input type="text" id="inp" placeholder="Type a sentence..." value="Stars shine brightest in the darkest nights" spellcheck="false">
+        <button class="dice-btn" onclick="doRandom()" title="Random sentence">🎲</button>
+      </div>
       <button class="btn btn-primary" id="goBtn" onclick="run()">Invert &rarr;</button>
     </div>
   </div>
@@ -344,23 +369,58 @@ function showEmbedding(emb) {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
+  // Calculate stats
   let mn = Infinity, mx = -Infinity, s2 = 0;
   for (const v of emb) { mn=Math.min(mn,v); mx=Math.max(mx,v); s2+=v*v; }
   $('embMin').textContent = mn.toFixed(3);
   $('embMax').textContent = mx.toFixed(3);
   $('embNorm').textContent = Math.sqrt(s2).toFixed(3);
 
-  const w = canvas.width, h = canvas.height;
-  const barW = w / emb.length;
-  for (let i=0; i<emb.length; i++) {
-    const t = (emb[i] - mn) / (mx - mn + 1e-9);
-    // purple-cyan gradient
-    const r = Math.round(60 + t*100);
-    const g = Math.round(40 + t*160);
-    const b = Math.round(180 + t*60);
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(i*barW, 0, Math.ceil(barW), h);
+  // Create histogram
+  const numBins = 50;
+  const bins = new Array(numBins).fill(0);
+  const range = mx - mn;
+  
+  // Bin the data
+  for (const v of emb) {
+    let binIdx = Math.floor(((v - mn) / range) * (numBins - 1));
+    if (binIdx >= numBins) binIdx = numBins - 1;
+    bins[binIdx]++;
   }
+
+  // Find max bin count for scaling
+  const maxCount = Math.max(...bins);
+
+  // Draw histogram
+  const w = canvas.width;
+  const h = canvas.height;
+  const barW = w / numBins;
+  const padding = 20;
+  const chartH = h - padding;
+
+  // Draw bars
+  for (let i = 0; i < numBins; i++) {
+    const barH = (bins[i] / maxCount) * chartH;
+    const x = i * barW;
+    const y = h - barH;
+    
+    // Gradient from accent to accent2
+    const t = i / numBins;
+    const r = Math.round(124 + t * (144 - 124));
+    const g = Math.round(106 + t * (97 - 106));
+    const b = Math.round(239 + t * (240 - 239));
+    
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(x, y, Math.ceil(barW) - 1, barH);
+  }
+
+  // Draw baseline
+  ctx.strokeStyle = '#d0d0d0';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, h - 0.5);
+  ctx.lineTo(w, h - 0.5);
+  ctx.stroke();
 }
 
 function initMaskGrid() {
