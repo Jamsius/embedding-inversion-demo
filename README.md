@@ -2,6 +2,8 @@
 
 Text embeddings are widely assumed to be safe, irreversible representations. This project demonstrates otherwise: given only an embedding vector, we reconstruct the original text using conditional masked diffusion.
 
+![Architecture](architecture.png)
+
 ## How It Works
 
 Existing inversion methods (Vec2Text, ALGEN, Zero2Text) generate tokens autoregressively and require iterative re-embedding through the target encoder. This creates two bottlenecks: attack cost scales with correction iterations, and left-to-right generation accumulates errors with no mechanism to revise earlier tokens.
@@ -10,64 +12,93 @@ We take a different approach: **embedding inversion as conditional masked diffus
 
 The approach is encoder-agnostic by construction. The embedding vector enters only through AdaLN modulation of layer normalization parameters, so the same architecture applies to any embedding model without alignment training or architecture-specific modifications.
 
-### Architecture
-
-![Architecture](architecture.png)
-
-```
-Input text --> Encoder (Qwen3-Embedding-0.6B) --> e in R^1024
-                                                      |
-                                                      v
-                                              Projection MLP
-                                                      |
-                                                      v
-                                                c in R^768
-                                                      |
-[MASK][MASK]...[MASK] --> Token Embed --> 8x Transformer Blocks (AdaLN-Zero) --> Logits --> Predicted Tokens
-       t=1.0                                                                                    |
-                                                                                          Iterative
-                                                                                          Denoising
-                                                                                                |
-                                                                                                v
-                                                                                    Reconstructed Text
-                                                                                          t=0.0
-```
-
-Each transformer block applies AdaLN-Zero conditioning: the conditioning vector produces per-layer scale, shift, and gate parameters, all initialized to zero so the model starts as a vanilla transformer and gradually learns to use the embedding signal.
-
 ### Results
 
 On 32-token sequences, the 78M-parameter model achieves:
 - 78% token accuracy
 - 0.83 cosine similarity between original and reconstructed embeddings
 
-## Live Demo
+## Data Preparation
 
-https://embedding-inversion-demo.jina.ai
-
-## Setup
+Two-stage pipeline: download raw texts, then tokenize and encode with the target embedding model.
 
 ```bash
-pip install -r requirements.txt
+# Stage 1: download multilingual raw texts (run once, reusable across encoders)
+python prepare_data_fast.py --stage 1 \
+  --langs en,zh,de,fr,ja,es,ru,ko,ar,pt \
+  --n-samples 5000000
+
+# Stage 2: tokenize + encode for a specific encoder (run per encoder)
+python prepare_data_fast.py --stage 2 \
+  --config configs/v2_qwen3.yaml \
+  --encode-batch 512
 ```
 
-Place the checkpoint at `checkpoints/qwen3_best.pt` (not included in repo).
+Stage 1 downloads from C4/mC4 and saves raw texts as JSON chunks. Stage 2 reads those texts, tokenizes with the encoder's tokenizer (truncated to `seq_len` tokens), encodes into embeddings, and saves as numpy arrays.
+
+Supported encoders via config:
+
+| Config | Encoder | Embedding Dim | Vocab |
+|--------|---------|--------------|-------|
+| v2_qwen3.yaml | Qwen/Qwen3-Embedding-0.6B | 1024 | 152K |
+| v2_jinav3.yaml | jinaai/jina-embeddings-v3 | 1024 | 250K |
+| v2_gemma.yaml | unsloth/embeddinggemma-300m | 768 | 262K |
+
+## Training
 
 ```bash
+# Train with a specific config
+python train.py --config configs/v2_qwen3.yaml
+
+# Resume from checkpoint
+python train.py --config configs/v2_qwen3.yaml --resume
+```
+
+Key training parameters (in config yaml):
+- `batch_size`: per-GPU batch size (auto-detected if not set)
+- `grad_accum`: gradient accumulation steps
+- `max_steps`: total training steps
+- `lr`: peak learning rate (cosine schedule with warmup)
+- `eval_every`: validation frequency
+
+The model uses mixed precision (bf16) and EMA weight averaging. Checkpoints are saved to `checkpoints/` with `best.pt` tracking the lowest validation loss.
+
+Training logs report step, loss, accuracy, and learning rate. Accuracy measures exact token match at masked positions.
+
+## Inference
+
+### Interactive Demo
+
+```bash
+pip install fastapi uvicorn
 python demo_server.py
 ```
 
-Server starts on port 8080.
+Opens on port 8080. Live demo: https://embedding-inversion-demo.jina.ai
+
+### Programmatic Inversion
+
+```bash
+python invert.py \
+  --config configs/v2_qwen3.yaml \
+  --checkpoint checkpoints/qwen3_best.pt \
+  --text "The quick brown fox jumps over the lazy dog"
+```
+
+This encodes the input text, then runs diffusion decoding to reconstruct it from the embedding alone. Supports multiple decoding strategies (greedy, Euler sampling, adaptive re-masking).
 
 ## Files
 
 | File | Description |
 |------|-------------|
-| demo_server.py | FastAPI server with encode/decode endpoints |
-| model.py | Conditional MDLM architecture |
-| invert.py | Diffusion sampling strategies |
-| index.html | Interactive demo frontend |
-| configs/v2_qwen3.yaml | Model configuration |
+| train.py | Training loop with cosine LR, EMA, mixed precision |
+| dataset.py | PyTorch dataset for token_ids + embeddings |
+| model.py | Conditional MDLM with AdaLN-Zero conditioning |
+| prepare_data_fast.py | Two-stage data preparation (download + encode) |
+| invert.py | Diffusion sampling and decoding strategies |
+| demo_server.py | FastAPI server for interactive demo |
+| index.html | Demo frontend |
+| configs/ | Encoder-specific training configurations |
 
 ## License
 

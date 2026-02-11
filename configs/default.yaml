@@ -1,0 +1,33 @@
+# Conditional MDLM for Embedding Inversion
+model:
+  vocab_size: 250002
+  max_seq_len: 32
+  hidden_dim: 768
+  num_layers: 8
+  num_heads: 12
+  ff_dim: 3072
+  dropout: 0.1
+  embedding_cond_dim: 1024  # jina-embeddings-v3 output dim
+  mask_token_id: 250001
+
+training:
+  batch_size: 128
+  grad_accum: 4
+  max_steps: 50000
+  lr: 0.0001
+  weight_decay: 0.01
+  warmup_steps: 2000
+  max_grad_norm: 1.0
+  log_every: 1
+  eval_every: 500
+  num_workers: 2
+  mixed_precision: true
+
+data:
+  data_dir: data
+  val_split: 0.01
+
+evaluation:
+  num_denoise_steps: 50
+  num_samples: 1000
+  jina_model: jinaai/jina-embeddings-v3

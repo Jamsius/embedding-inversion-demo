@@ -7,3 +7,7 @@ venv/
 .venv/
 *.log
 .DS_Store
+*.pt
+venv/
+data_*/
+__pycache__/
