@@ -389,11 +389,11 @@ async def index():
 
 @app.get("/og-image.png")
 async def og_image():
-    return FileResponse(Path(__file__).parent / "demo" / "og-image.png", media_type="image/png")
+    return FileResponse(Path(__file__).parent / "demo" / "og-image.png", media_type="image/png", headers={"Cache-Control": "no-cache, max-age=0"})
 
 @app.get("/favicon-32.png")
 async def favicon():
-    return FileResponse(Path(__file__).parent / "demo" / "favicon-32.png", media_type="image/png")
+    return FileResponse(Path(__file__).parent / "demo" / "favicon-32.png", media_type="image/png", headers={"Cache-Control": "no-cache, max-age=0"})
 
 @app.get("/favicon.ico")
 async def favicon_ico():
