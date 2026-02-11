@@ -24,7 +24,7 @@ from transformers import AutoModel, AutoTokenizer
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -384,6 +384,20 @@ async def index():
     html_path = Path(__file__).parent / "index.html"
     return HTMLResponse(html_path.read_text())
 
+
+
+
+@app.get("/og-image.png")
+async def og_image():
+    return FileResponse(Path(__file__).parent / "og-image.png", media_type="image/png")
+
+@app.get("/favicon-32.png")
+async def favicon():
+    return FileResponse(Path(__file__).parent / "favicon-32.png", media_type="image/png")
+
+@app.get("/favicon.ico")
+async def favicon_ico():
+    return FileResponse(Path(__file__).parent / "favicon-32.png", media_type="image/png")
 
 @app.get("/queue")
 async def queue_status():
