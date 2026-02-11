@@ -154,25 +154,35 @@ MODEL_CONFIGS = {
     },
 }
 
-SAMPLE_SENTENCES_QWEN3 = [
-    # memes & internet culture
+SAMPLE_SENTENCES_QWEN3_EASY = [
+    "The quick brown fox jumps over the lazy dog",
+    "To be or not to be, that is the question",
+    "I think therefore I am said Descartes",
+    "All that glitters is not gold",
+    "The only thing we have to fear is fear itself",
+    "That is one small step for man, one giant leap for mankind",
+    "In the beginning God created the heavens and the earth",
+    "It was the best of times, it was the worst of times",
+    "The unexamined life is not worth living",
+    "Ask not what your country can do for you",
+    "Knowledge is power, said Francis Bacon",
+    "Give me liberty or give me death",
+    "Elementary my dear Watson, the game is afoot",
+    "Houston we have a problem",
+    "May the force be with you, always",
+]
+
+SAMPLE_SENTENCES_QWEN3_HARD = [
     "is this a pigeon? no it is a transformer model",
     "i asked chatgpt to write my resignation letter and it was too polite",
     "my embeddings are not aligned and neither is my sleep schedule",
     "sir this is a vector database not a therapy session",
     "instructions unclear, model started generating poetry",
     "me: i will go to bed early. also me at 3am: reading arxiv papers",
-    "how it started: hello world. how it is going: 200B parameters",
     "nobody: absolutely nobody: AI twitter: we need to talk about scaling laws",
-    # recent news style
-    "OpenAI announces GPT-5 while researchers debate if benchmarks even matter anymore",
+    "OpenAI announces GPT-5 while researchers debate if benchmarks even matter",
     "NVIDIA stock hits new high as demand for H100 GPUs continues to outpace supply",
-    "European Union passes comprehensive AI regulation despite industry pushback",
     "Google DeepMind achieves breakthrough in protein structure prediction",
-    "Anthropic raises 2 billion as enterprise adoption of AI assistants accelerates",
-    "Tesla robotaxi delayed again as Musk blames regulatory hurdles not technology",
-    "Apple integrates on-device AI across iPhone lineup with no cloud needed",
-    # out of distribution
     "the mitochondria is the powerhouse of the cell and I still remember that",
     "according to all known laws of aviation a bee should not be able to fly",
     "you miss 100 percent of the shots you do not take says Wayne Gretzky",
@@ -180,32 +190,36 @@ SAMPLE_SENTENCES_QWEN3 = [
     "rm -rf is not a valid debugging strategy no matter what stackoverflow says",
 ]
 
-SAMPLE_SENTENCES_GEMMA = [
-    # multilingual
+SAMPLE_SENTENCES_GEMMA_EASY = [
+    "The quick brown fox jumps over the lazy dog",
+    "To be or not to be, that is the question",
+    "All that glitters is not gold",
+    "I think therefore I am said Descartes",
+    "The only thing we have to fear is fear itself",
+    "In the beginning God created the heavens and the earth",
+    "It was the best of times, it was the worst of times",
+    "Knowledge is power, said Francis Bacon",
+    "May the force be with you, always",
+    "Houston we have a problem",
+]
+
+SAMPLE_SENTENCES_GEMMA_HARD = [
     "Die Kunst des Maschinenlernens liegt in den Daten",
     "L intelligence artificielle transforme notre quotidien",
     "El aprendizaje profundo revoluciona la medicina moderna",
     "La ricerca scientifica apre nuove frontiere ogni giorno",
     "Yapay zeka gunluk hayatimizi derinden etkiliyor",
     "A inteligencia artificial esta revolucionando a pesquisa",
-    "Maschinelles Lernen veraendert die Welt der Datenanalyse",
     "Le traitement du langage naturel permet aux machines de comprendre",
     "Los modelos de lenguaje grandes generan texto sorprendentemente coherente",
-    "Kuenstliche Intelligenz wird die Arbeitswelt grundlegend veraendern",
-    # multilingual memes & OOD
     "chatgpt wrote my thesis and my professor did not notice anything wrong",
     "the cake is a lie but the embeddings are real",
-    "sourdough starter maintenance is harder than maintaining a kubernetes cluster",
-    "three body problem the dark forest theory explains why aliens are silent",
     "the voyager 1 spacecraft is still sending data from interstellar space",
-    "bitcoin halving event triggers mass speculation about the next bull run",
-    "a mass shooting leads to calls for gun control that go nowhere as usual",
     "Ich bin ein Berliner said JFK but the model thinks he said donut",
-    "sudo make me a sandwich is peak unix energy and you know it",
     "selon toutes les lois connues de l aviation une abeille ne devrait pas voler",
 ]
 
-SAMPLE_SENTENCES = SAMPLE_SENTENCES_QWEN3
+SAMPLE_SENTENCES = SAMPLE_SENTENCES_QWEN3_EASY
 
 
 def load_model(model_key):
@@ -509,10 +523,12 @@ async def decode(req: DecodeRequest):
 
 
 @app.get("/random")
-async def get_random(model: str = "qwen3"):
+async def get_random(model: str = "qwen3", hard: bool = False):
     if model.lower() == "gemma":
-        return {"text": random.choice(SAMPLE_SENTENCES_GEMMA)}
-    return {"text": random.choice(SAMPLE_SENTENCES_QWEN3)}
+        pool = SAMPLE_SENTENCES_GEMMA_HARD if hard else SAMPLE_SENTENCES_GEMMA_EASY
+    else:
+        pool = SAMPLE_SENTENCES_QWEN3_HARD if hard else SAMPLE_SENTENCES_QWEN3_EASY
+    return {"text": random.choice(pool)}
 
 
 @app.get("/health")

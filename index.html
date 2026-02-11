@@ -235,6 +235,7 @@ footer a:hover{color:var(--accent)}
 let currentEmbedding = null;
 let currentText = '';
 let selectedModel = 'qwen3';
+let diceClicks = 0;
 
 const MODEL_NAMES = {
   'qwen3': 'Qwen3-Embedding',
@@ -260,7 +261,9 @@ function selectModel(model) {
 }
 
 async function randomSentence() {
-  const r = await fetch('/random?model=' + selectedModel);
+  diceClicks++;
+  const hard = diceClicks > 1 ? '&hard=true' : '';
+  const r = await fetch('/random?model=' + selectedModel + hard);
   const d = await r.json();
   document.getElementById('input-text').value = d.text;
 }
