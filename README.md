@@ -1,6 +1,6 @@
 # Embedding Inversion via Conditional Masked Diffusion
 
-**Live Demo: https://embedding-inversion-demo.jina.ai**
+[Technical Report](technical-report.pdf) | [Live Demo](https://embedding-inversion-demo.jina.ai)
 
 Text embeddings are widely assumed to be safe, irreversible representations. This project demonstrates otherwise: given only an embedding vector, we reconstruct the original text using conditional masked diffusion.
 
@@ -14,11 +14,7 @@ We take a different approach: **embedding inversion as conditional masked diffus
 
 The approach is encoder-agnostic by construction. The embedding vector enters only through AdaLN modulation of layer normalization parameters, so the same architecture applies to any embedding model without alignment training or architecture-specific modifications.
 
-### Results
-
-On 32-token sequences, the 78M-parameter model achieves:
-- 78% token accuracy
-- 0.83 cosine similarity between original and reconstructed embeddings
+Check out the [live demo](https://embedding-inversion-demo.jina.ai) to see it in action.
 
 ## Data Preparation
 
