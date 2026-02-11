@@ -1,93 +1,72 @@
 # Embedding Inversion via Conditional Masked Diffusion
 
-Embeddings are widely assumed to be safe, irreversible representations. This demo shows they can be inverted to recover the original text.
+Text embeddings are widely assumed to be safe, irreversible representations. This project demonstrates otherwise: given only an embedding vector, we reconstruct the original text using conditional masked diffusion.
 
-## Motivation
+## How It Works
 
-Production systems routinely treat embeddings as anonymized: vector databases transmit them across organizational boundaries, API services cache them without encryption, distributed search systems share them with third-party providers. These practices assume embeddings are irreversible.
+Existing inversion methods (Vec2Text, ALGEN, Zero2Text) generate tokens autoregressively and require iterative re-embedding through the target encoder. This creates two bottlenecks: attack cost scales with correction iterations, and left-to-right generation accumulates errors with no mechanism to revise earlier tokens.
 
-They are not. This implementation recovers 69.7% of tokens and achieves 0.83 cosine similarity from a single 1024-dimensional vector, without any access to the target encoder at inference time.
+We take a different approach: **embedding inversion as conditional masked diffusion**. Starting from a fully masked sequence, a denoising model reveals tokens at all positions in parallel, conditioned on the target embedding via adaptive layer normalization (AdaLN-Zero). Each denoising step refines all positions simultaneously using global context, without ever re-embedding the current hypothesis.
 
-## Method
+The approach is encoder-agnostic by construction. The embedding vector enters only through AdaLN modulation of layer normalization parameters, so the same architecture applies to any embedding model without alignment training or architecture-specific modifications.
 
-We frame embedding inversion as conditional masked diffusion. Starting from a fully masked sequence, a denoising model iteratively reveals tokens at all positions in parallel, conditioned on the target embedding vector via adaptive layer normalization.
+### Architecture
 
-The key difference from prior work: correction is built into the diffusion process itself. Each denoising step refines all positions simultaneously using global context, without ever re-embedding the current hypothesis. This eliminates the need for access to the target encoder at inference time and reduces attack cost to a fixed number of forward passes through a small model.
+```
+Input text --> Encoder (Qwen3-Embedding-0.6B) --> e in R^1024
+                                                      |
+                                                      v
+                                              Projection MLP
+                                                      |
+                                                      v
+                                                c in R^768
+                                                      |
+[MASK][MASK]...[MASK] --> Token Embed --> 8x Transformer Blocks (AdaLN-Zero) --> Logits --> Predicted Tokens
+       t=1.0                                                                                    |
+                                                                                          Iterative
+                                                                                          Denoising
+                                                                                                |
+                                                                                                v
+                                                                                    Reconstructed Text
+                                                                                          t=0.0
+```
 
-The approach is encoder-agnostic by construction. The embedding vector enters only through AdaLN modulation of layer normalization parameters, so the same architecture works with any embedding model without alignment training or model-specific modifications.
+Each transformer block applies AdaLN-Zero conditioning: the conditioning vector produces per-layer scale, shift, and gate parameters, all initialized to zero so the model starts as a vanilla transformer and gradually learns to use the embedding signal.
 
-## Architecture
+### Results
 
-![Architecture](architecture.png)
+On 32-token sequences, the 78M-parameter model achieves:
+- 78% token accuracy
+- 0.83 cosine similarity between original and reconstructed embeddings
 
-The system operates in two stages:
+## Live Demo
 
-1. **Encoding**: Input text is embedded into a 1024-dimensional vector using Qwen3-Embedding
-2. **Decoding**: The embedding conditions a masked diffusion language model with AdaLN-Zero, which iteratively unmasks tokens through diffusion sampling
-
-The diffusion process starts from a fully masked sequence and progressively reveals tokens:
-- t=1.0: `[MASK] [MASK] [MASK] ...` (fully masked)
-- t=0.5: `The quick [MASK] [MASK] fox ...` (partial)
-- t=0.0: `The quick brown fox jumps over the lazy dog` (reconstructed)
-
-All tokens refine in parallel based on global embedding context, avoiding autoregressive error accumulation.
-
-## Model Details
-
-- **Backbone**: 8-layer transformer, 768 hidden dim, 12 attention heads
-- **Parameters**: 78M trainable (270M total with vocabulary embeddings)
-- **Conditioning**: AdaLN modulation at each layer, taking both timestep and embedding as input
-- **Training**: 200K steps on 2M C4 samples, log-linear noise schedule with λ=5.0
-- **Checkpoint**: 744M (includes EMA weights and optimizer state)
+https://embedding-inversion-demo.jina.ai
 
 ## Setup
 
-Install dependencies:
 ```bash
-pip install fastapi uvicorn torch transformers numpy pyyaml
+pip install -r requirements.txt
 ```
 
-Download the checkpoint (744M):
-```bash
-# The checkpoint is not in this repo. Place it in ~/checkpoints/
-mkdir -p ~/checkpoints
-# scp user@host:~/checkpoints/qwen3_best.pt ~/checkpoints/
-```
+Place the checkpoint at `checkpoints/qwen3_best.pt` (not included in repo).
 
-The server expects the checkpoint at `~/checkpoints/qwen3_best.pt`.
-
-## Running the Demo
-
-Start the server:
 ```bash
 python demo_server.py
 ```
 
-Open `http://localhost:8080` in your browser. Type a sentence, click "Invert", and watch the diffusion process reconstruct the text from its embedding.
-
-## Results
-
-On 32-token sequences from C4:
-- **Token accuracy**: 69.7%
-- **Cosine similarity**: 0.83
-- **Exact match**: 12.3%
-- **Inference time**: 150ms per sequence (sequential), 50ms (parallel Euler sampling)
-
-## Privacy Implications
-
-Embedding inversion has evolved from theoretical possibility to practical attack. Organizations deploying embedding-based systems must reassess their threat model: embeddings leak information comparable to the original text and require equivalent protection.
-
-Domain-specific embeddings in medical, financial, and legal applications face amplified risk due to constrained vocabulary and semantic spaces that facilitate inversion.
+Server starts on port 8080.
 
 ## Files
 
-- `demo_server.py`: FastAPI server handling encode/decode endpoints
-- `index.html`: Interactive web UI with real-time diffusion visualization
-- `model.py`: Conditional MDLM with AdaLN conditioning
-- `invert.py`: Standalone diffusion sampling for command-line use
-- `configs/v2_qwen3.yaml`: Model configuration
-- `checkpoints/qwen3_best.pt`: Trained model weights (not in repo, 744M)
+| File | Description |
+|------|-------------|
+| demo_server.py | FastAPI server with encode/decode endpoints |
+| model.py | Conditional MDLM architecture |
+| invert.py | Diffusion sampling strategies |
+| index.html | Interactive demo frontend |
+| configs/v2_qwen3.yaml | Model configuration |
 
 ## License
 
-Apache 2.0. See LICENSE file.
+Apache 2.0
