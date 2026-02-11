@@ -125,7 +125,7 @@ canvas#histogram{width:100%;height:110px;border-radius:var(--radius);background:
 .token.masked{background:#f0f0f0;color:var(--mask);border-color:var(--border)}
 .token.revealed{background:var(--surface);color:var(--text);font-weight:600;border-color:var(--border)}
 .token.just-changed{
-  background:#eeeeff;color:var(--accent);font-weight:700;
+  background:#fde8e2;color:var(--accent);font-weight:700;
   border-color:var(--accent);
   animation:pop .3s ease;
 }
@@ -352,9 +352,9 @@ function drawHistogram(arr) {
     const y = H - pad.b - h;
 
     const t = i / nBins;
-    const r2 = Math.round(91 + t * 40);
-    const g = Math.round(95 + t * 40);
-    const b = Math.round(199 + t * 30);
+    const r2 = Math.round(225 + t * 20);
+    const g = Math.round(100 + t * 30);
+    const b = Math.round(65 + t * 20);
     ctx.fillStyle = `rgb(${r2},${g},${b})`;
     ctx.fillRect(x, y, pw - 1, h);
   }
