@@ -260,7 +260,7 @@ function selectModel(model) {
 }
 
 async function randomSentence() {
-  const r = await fetch('/random');
+  const r = await fetch('/random?model=' + selectedModel);
   const d = await r.json();
   document.getElementById('input-text').value = d.text;
 }

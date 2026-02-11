@@ -14,13 +14,14 @@ import json
 import math
 import random
 import asyncio
+import time
 from pathlib import Path
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import AutoModel, AutoTokenizer
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
@@ -126,7 +127,7 @@ def get_pool_fn(model_name):
     return mean_pool
 
 # ---------------------------------------------------------------------------
-# Globals - Multi-model support
+# Globals - Multi-model support + Concurrency Control
 # ---------------------------------------------------------------------------
 
 app = FastAPI()
@@ -134,6 +135,12 @@ app = FastAPI()
 # Each model has its own: MODEL, CONFIG, ENCODER_MODEL, ENCODER_TOK, DECODER_TOK
 MODELS = {}  # model_key -> dict with model, config, encoder_model, encoder_tok, decoder_tok
 DEVICE = None
+
+# Concurrency control
+GPU_SEMAPHORE = asyncio.Semaphore(2)  # Max 2 concurrent GPU operations
+ACTIVE_COUNT = 0
+WAITING_COUNT = 0
+count_lock = asyncio.Lock()
 
 # Model configurations
 MODEL_CONFIGS = {
@@ -147,28 +154,58 @@ MODEL_CONFIGS = {
     },
 }
 
-SAMPLE_SENTENCES = [
-    "The quick brown fox jumps over the lazy dog",
-    "Artificial intelligence is transforming the world",
-    "Machine learning models can understand language",
-    "I love spending time in nature during autumn",
-    "Coffee is the fuel that powers innovation",
-    "Music transcends all cultural boundaries",
-    "The ocean waves crash against the rocky shore",
-    "Reading opens doors to infinite worlds",
-    "Technology connects people across vast distances",
-    "Dreams are the seeds of future realities",
-    "Stars shine brightest in the darkest nights",
-    "Knowledge is the most powerful currency",
-    "Every great journey begins with a single step",
-    "Creativity flourishes when constraints are removed",
-    "The universe is full of unsolved mysteries",
-    "Quantum computers will revolutionize cryptography",
-    "Fresh bread from the oven smells wonderful",
-    "Photography captures moments that last forever",
-    "Mathematics is the language of the universe",
-    "Kindness costs nothing but means everything",
+SAMPLE_SENTENCES_QWEN3 = [
+    # memes & internet culture
+    "is this a pigeon? no it is a transformer model",
+    "i asked chatgpt to write my resignation letter and it was too polite",
+    "my embeddings are not aligned and neither is my sleep schedule",
+    "sir this is a vector database not a therapy session",
+    "instructions unclear, model started generating poetry",
+    "me: i will go to bed early. also me at 3am: reading arxiv papers",
+    "how it started: hello world. how it is going: 200B parameters",
+    "nobody: absolutely nobody: AI twitter: we need to talk about scaling laws",
+    # recent news style
+    "OpenAI announces GPT-5 while researchers debate if benchmarks even matter anymore",
+    "NVIDIA stock hits new high as demand for H100 GPUs continues to outpace supply",
+    "European Union passes comprehensive AI regulation despite industry pushback",
+    "Google DeepMind achieves breakthrough in protein structure prediction",
+    "Anthropic raises 2 billion as enterprise adoption of AI assistants accelerates",
+    "Tesla robotaxi delayed again as Musk blames regulatory hurdles not technology",
+    "Apple integrates on-device AI across iPhone lineup with no cloud needed",
+    # out of distribution
+    "the mitochondria is the powerhouse of the cell and I still remember that",
+    "according to all known laws of aviation a bee should not be able to fly",
+    "you miss 100 percent of the shots you do not take says Wayne Gretzky",
+    "404 meaning of life not found try again after coffee",
+    "rm -rf is not a valid debugging strategy no matter what stackoverflow says",
 ]
+
+SAMPLE_SENTENCES_GEMMA = [
+    # multilingual
+    "Die Kunst des Maschinenlernens liegt in den Daten",
+    "L intelligence artificielle transforme notre quotidien",
+    "El aprendizaje profundo revoluciona la medicina moderna",
+    "La ricerca scientifica apre nuove frontiere ogni giorno",
+    "Yapay zeka gunluk hayatimizi derinden etkiliyor",
+    "A inteligencia artificial esta revolucionando a pesquisa",
+    "Maschinelles Lernen veraendert die Welt der Datenanalyse",
+    "Le traitement du langage naturel permet aux machines de comprendre",
+    "Los modelos de lenguaje grandes generan texto sorprendentemente coherente",
+    "Kuenstliche Intelligenz wird die Arbeitswelt grundlegend veraendern",
+    # multilingual memes & OOD
+    "chatgpt wrote my thesis and my professor did not notice anything wrong",
+    "the cake is a lie but the embeddings are real",
+    "sourdough starter maintenance is harder than maintaining a kubernetes cluster",
+    "three body problem the dark forest theory explains why aliens are silent",
+    "the voyager 1 spacecraft is still sending data from interstellar space",
+    "bitcoin halving event triggers mass speculation about the next bull run",
+    "a mass shooting leads to calls for gun control that go nowhere as usual",
+    "Ich bin ein Berliner said JFK but the model thinks he said donut",
+    "sudo make me a sandwich is peak unix energy and you know it",
+    "selon toutes les lois connues de l aviation une abeille ne devrait pas voler",
+]
+
+SAMPLE_SENTENCES = SAMPLE_SENTENCES_QWEN3
 
 
 def load_model(model_key):
@@ -237,6 +274,34 @@ def load_models():
 
 
 # ---------------------------------------------------------------------------
+# Concurrency helpers
+# ---------------------------------------------------------------------------
+
+async def increment_active():
+    global ACTIVE_COUNT
+    async with count_lock:
+        ACTIVE_COUNT += 1
+
+async def decrement_active():
+    global ACTIVE_COUNT
+    async with count_lock:
+        ACTIVE_COUNT -= 1
+
+async def increment_waiting():
+    global WAITING_COUNT
+    async with count_lock:
+        WAITING_COUNT += 1
+
+async def decrement_waiting():
+    global WAITING_COUNT
+    async with count_lock:
+        WAITING_COUNT -= 1
+
+async def get_queue_status():
+    async with count_lock:
+        return {"active": ACTIVE_COUNT, "waiting": WAITING_COUNT}
+
+# ---------------------------------------------------------------------------
 # API
 # ---------------------------------------------------------------------------
 
@@ -265,6 +330,12 @@ async def index():
     return HTMLResponse(html_path.read_text())
 
 
+@app.get("/queue")
+async def queue_status():
+    """Return current queue status for frontend polling."""
+    return await get_queue_status()
+
+
 @app.post("/encode", response_model=EncodeResponse)
 async def encode(req: EncodeRequest):
     model_key = req.model.lower()
@@ -272,16 +343,42 @@ async def encode(req: EncodeRequest):
         return {"error": f"Unknown model: {model_key}"}
     
     m = MODELS[model_key]
-    with torch.no_grad():
-        inputs = m["encoder_tok"](
-            [req.text], return_tensors="pt",
-            padding=True, truncation=True, max_length=512
-        ).to(DEVICE)
-        out = m["encoder_model"](**inputs)
-        pool_fn = get_pool_fn(m["config"]["model"]["encoder_model"])
-        emb = pool_fn(out.last_hidden_state, inputs["attention_mask"])
-        emb = F.normalize(emb, dim=-1)
-    return EncodeResponse(embedding=emb[0].cpu().tolist(), text=req.text)
+    
+    # Track waiting
+    await increment_waiting()
+    start_wait = time.time()
+    
+    try:
+        # Wait for semaphore with timeout
+        try:
+            async with asyncio.timeout(30):
+                async with GPU_SEMAPHORE:
+                    await decrement_waiting()
+                    await increment_active()
+                    try:
+                        with torch.no_grad():
+                            inputs = m["encoder_tok"](
+                                [req.text], return_tensors="pt",
+                                padding=True, truncation=True, max_length=512
+                            ).to(DEVICE)
+                            out = m["encoder_model"](**inputs)
+                            pool_fn = get_pool_fn(m["config"]["model"]["encoder_model"])
+                            emb = pool_fn(out.last_hidden_state, inputs["attention_mask"])
+                            emb = F.normalize(emb, dim=-1)
+                        return EncodeResponse(embedding=emb[0].cpu().tolist(), text=req.text)
+                    finally:
+                        await decrement_active()
+        except asyncio.TimeoutError:
+            await decrement_waiting()
+            raise HTTPException(
+                status_code=503,
+                detail="Server busy, please try again in a moment"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        await decrement_waiting()
+        raise
 
 
 @app.post("/decode")
@@ -298,107 +395,135 @@ async def decode(req: DecodeRequest):
     decoder_tok = m["decoder_tok"]
 
     async def generate():
-        embedding = torch.tensor([req.embedding], device=DEVICE, dtype=torch.float32)
-        embedding = F.normalize(embedding, dim=-1)
+        # Track waiting
+        await increment_waiting()
+        
+        try:
+            # Wait for semaphore with timeout
+            try:
+                async with asyncio.timeout(30):
+                    async with GPU_SEMAPHORE:
+                        await decrement_waiting()
+                        await increment_active()
+                        try:
+                            embedding = torch.tensor([req.embedding], device=DEVICE, dtype=torch.float32)
+                            embedding = F.normalize(embedding, dim=-1)
 
-        L = m["config"]["model"]["max_seq_len"]
-        mask_id = m["config"]["model"]["mask_token_id"]
-        steps = max(1, min(req.steps, L))
-        per_step = max(1, L // steps)
+                            L = m["config"]["model"]["max_seq_len"]
+                            mask_id = m["config"]["model"]["mask_token_id"]
+                            steps = max(1, min(req.steps, L))
+                            per_step = max(1, L // steps)
 
-        ids = torch.full((1, L), mask_id, dtype=torch.long, device=DEVICE)
-        unmasked = torch.zeros(L, dtype=torch.bool, device=DEVICE)
+                            ids = torch.full((1, L), mask_id, dtype=torch.long, device=DEVICE)
+                            unmasked = torch.zeros(L, dtype=torch.bool, device=DEVICE)
 
-        with torch.no_grad():
-            for step in range(steps):
-                if unmasked.all():
-                    break
+                            with torch.no_grad():
+                                for step in range(steps):
+                                    if unmasked.all():
+                                        break
 
-                logits = model(ids, embedding)
-                probs = F.softmax(logits[0], dim=-1)
-                confidence, preds = probs.max(dim=-1)
-                confidence[unmasked] = -1.0
+                                    logits = model(ids, embedding)
+                                    probs = F.softmax(logits[0], dim=-1)
+                                    confidence, preds = probs.max(dim=-1)
+                                    confidence[unmasked] = -1.0
 
-                k = min(per_step, (~unmasked).sum().item())
-                if k == 0:
-                    break
-                _, topk = confidence.topk(k)
-                topk_set = set(topk.cpu().tolist())
+                                    k = min(per_step, (~unmasked).sum().item())
+                                    if k == 0:
+                                        break
+                                    _, topk = confidence.topk(k)
+                                    topk_set = set(topk.cpu().tolist())
 
-                ids[0, topk] = preds[topk]
-                unmasked[topk] = True
+                                    ids[0, topk] = preds[topk]
+                                    unmasked[topk] = True
 
-                # Build per-token info
-                tokens = []
-                for i in range(L):
-                    tid = ids[0, i].item()
-                    if tid == mask_id:
-                        tokens.append({"t": "[MASK]", "s": "m"})  # masked
-                    else:
-                        tok_text = decoder_tok.decode([tid])
-                        state = "c" if i in topk_set else "u"  # changed / unchanged
-                        tokens.append({"t": tok_text, "s": state})
+                                    # Build per-token info
+                                    tokens = []
+                                    for i in range(L):
+                                        tid = ids[0, i].item()
+                                        if tid == mask_id:
+                                            tokens.append({"t": "[MASK]", "s": "m"})  # masked
+                                        else:
+                                            tok_text = decoder_tok.decode([tid])
+                                            state = "c" if i in topk_set else "u"  # changed / unchanged
+                                            tokens.append({"t": tok_text, "s": state})
 
-                # Decode full text (skip mask tokens)
-                clean = [t for t in ids[0].cpu().tolist() if t != mask_id]
-                text = decoder_tok.decode(clean, skip_special_tokens=True)
+                                    # Decode full text (skip mask tokens)
+                                    clean = [t for t in ids[0].cpu().tolist() if t != mask_id]
+                                    text = decoder_tok.decode(clean, skip_special_tokens=True)
 
-                evt = {
-                    "step": step,
-                    "total": steps,
-                    "tokens": tokens,
-                    "text": text,
-                    "progress": float(unmasked.sum().item()) / L,
-                }
-                yield f"data: {json.dumps(evt)}\n\n"
-                await asyncio.sleep(0.08)
+                                    evt = {
+                                        "step": step,
+                                        "total": steps,
+                                        "tokens": tokens,
+                                        "text": text,
+                                        "progress": float(unmasked.sum().item()) / L,
+                                    }
+                                    yield f"data: {json.dumps(evt)}\n\n"
+                                    await asyncio.sleep(0.08)
 
-        # Final: compute cosine similarity by re-encoding decoded text
-        clean = [t for t in ids[0].cpu().tolist() if t != mask_id]
-        final_text = decoder_tok.decode(clean, skip_special_tokens=True)
+                            # Final: compute cosine similarity by re-encoding decoded text
+                            clean = [t for t in ids[0].cpu().tolist() if t != mask_id]
+                            final_text = decoder_tok.decode(clean, skip_special_tokens=True)
 
-        with torch.no_grad():
-            inputs2 = encoder_tok(
-                [final_text], return_tensors="pt",
-                padding=True, truncation=True, max_length=512
-            ).to(DEVICE)
-            out2 = encoder_model(**inputs2)
-            pool_fn2 = get_pool_fn(m["config"]["model"]["encoder_model"])
-            emb2 = pool_fn2(out2.last_hidden_state, inputs2["attention_mask"])
-            emb2 = F.normalize(emb2, dim=-1)
-            cos_sim = F.cosine_similarity(embedding, emb2).item()
+                            with torch.no_grad():
+                                inputs2 = encoder_tok(
+                                    [final_text], return_tensors="pt",
+                                    padding=True, truncation=True, max_length=512
+                                ).to(DEVICE)
+                                out2 = encoder_model(**inputs2)
+                                pool_fn2 = get_pool_fn(m["config"]["model"]["encoder_model"])
+                                emb2 = pool_fn2(out2.last_hidden_state, inputs2["attention_mask"])
+                                emb2 = F.normalize(emb2, dim=-1)
+                                cos_sim = F.cosine_similarity(embedding, emb2).item()
 
-        # Build final token list
-        tokens = []
-        for i in range(L):
-            tid = ids[0, i].item()
-            if tid == mask_id:
-                tokens.append({"t": "[MASK]", "s": "m"})
-            else:
-                tokens.append({"t": decoder_tok.decode([tid]), "s": "u"})
+                            # Build final token list
+                            tokens = []
+                            for i in range(L):
+                                tid = ids[0, i].item()
+                                if tid == mask_id:
+                                    tokens.append({"t": "[MASK]", "s": "m"})
+                                else:
+                                    tokens.append({"t": decoder_tok.decode([tid]), "s": "u"})
 
-        evt = {
-            "step": steps,
-            "total": steps,
-            "tokens": tokens,
-            "text": final_text,
-            "progress": 1.0,
-            "cosine_similarity": round(cos_sim, 4),
-            "done": True,
-        }
-        yield f"data: {json.dumps(evt)}\n\n"
+                            evt = {
+                                "step": steps,
+                                "total": steps,
+                                "tokens": tokens,
+                                "text": final_text,
+                                "progress": 1.0,
+                                "cosine_similarity": round(cos_sim, 4),
+                                "done": True,
+                            }
+                            yield f"data: {json.dumps(evt)}\n\n"
+                        finally:
+                            await decrement_active()
+            except asyncio.TimeoutError:
+                await decrement_waiting()
+                yield f"data: {json.dumps({'error': 'Server busy, please try again in a moment'})}\n\n"
+                return
+        except Exception as e:
+            await decrement_waiting()
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @app.get("/random")
-async def get_random():
-    return {"text": random.choice(SAMPLE_SENTENCES)}
+async def get_random(model: str = "qwen3"):
+    if model.lower() == "gemma":
+        return {"text": random.choice(SAMPLE_SENTENCES_GEMMA)}
+    return {"text": random.choice(SAMPLE_SENTENCES_QWEN3)}
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "device": str(DEVICE), "models": list(MODELS.keys())}
+    queue = await get_queue_status()
+    return {
+        "status": "ok",
+        "device": str(DEVICE),
+        "models": list(MODELS.keys()),
+        "queue": queue
+    }
 
 
 if __name__ == "__main__":
