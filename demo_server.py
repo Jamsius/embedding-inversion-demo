@@ -381,7 +381,7 @@ async def startup():
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    html_path = Path(__file__).parent / "index.html"
+    html_path = Path(__file__).parent / "demo" / "index.html"
     return HTMLResponse(html_path.read_text())
 
 
@@ -389,15 +389,15 @@ async def index():
 
 @app.get("/og-image.png")
 async def og_image():
-    return FileResponse(Path(__file__).parent / "og-image.png", media_type="image/png")
+    return FileResponse(Path(__file__).parent / "demo" / "og-image.png", media_type="image/png")
 
 @app.get("/favicon-32.png")
 async def favicon():
-    return FileResponse(Path(__file__).parent / "favicon-32.png", media_type="image/png")
+    return FileResponse(Path(__file__).parent / "demo" / "favicon-32.png", media_type="image/png")
 
 @app.get("/favicon.ico")
 async def favicon_ico():
-    return FileResponse(Path(__file__).parent / "favicon-32.png", media_type="image/png")
+    return FileResponse(Path(__file__).parent / "demo" / "favicon-32.png", media_type="image/png")
 
 @app.get("/queue")
 async def queue_status():
