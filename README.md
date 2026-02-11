@@ -57,6 +57,7 @@ python train.py --config configs/v2_qwen3.yaml --resume
 ```
 
 ![Training Curve](training-curve.png)
+![Validation Loss](valloss-curve.png)
 
 Four encoders trained in parallel on A100-40GB GPUs. Qwen3-Embedding reaches 78% token accuracy at 53K steps, leading the pack. All models use the same 78M-parameter MDLM backbone with AdaLN-Zero conditioning.
 
