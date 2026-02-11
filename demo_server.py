@@ -196,21 +196,21 @@ MODEL_CONFIGS = {
 }
 
 SAMPLE_SENTENCES_QWEN3_EASY = [
-    "The quick brown fox jumps over the lazy dog while the cat watches from the window",
-    "To be or not to be, that is the question that haunts every thinking mind",
-    "It was the best of times, it was the worst of times, it was the age of wisdom",
-    "The only thing we have to fear is fear itself, said Franklin Roosevelt in 1933",
-    "That is one small step for man, one giant leap for mankind, said Neil Armstrong",
-    "In the beginning God created the heavens and the earth, and the earth was without form",
-    "Ask not what your country can do for you, ask what you can do for your country",
-    "I have a dream that one day this nation will rise up and live out its true meaning",
-    "We hold these truths to be self evident, that all men are created equal and free",
-    "The only way to do great work is to love what you do, said Steve Jobs at Stanford",
-    "Two roads diverged in a wood, and I took the one less traveled by, and that made all",
-    "It is not the strongest of the species that survives, but the most adaptable to change",
-    "The greatest glory in living lies not in never falling, but in rising every time we fall",
-    "In three words I can sum up everything I have learned about life: it goes on, said Frost",
-    "Do not go gentle into that good night, rage rage against the dying of the light",
+    "The coldest winter I ever spent was a summer in San Francisco, said Mark Twain",
+    "Napoleon marched his Grand Army from Paris to Moscow in the winter of 1812",
+    "The Great Wall of China stretches over 13,000 miles from Dandong to Lop Lake",
+    "Albert Einstein developed the theory of relativity while working in Bern, Switzerland",
+    "The Titanic sank in the North Atlantic Ocean after hitting an iceberg in April 1912",
+    "Neil Armstrong landed on the Moon at the Sea of Tranquility on July 20, 1969",
+    "The Berlin Wall fell on November 9, 1989, reuniting East and West Germany",
+    "Amazon was founded by Jeff Bezos in his garage in Bellevue, Washington in 1994",
+    "The Eiffel Tower in Paris was built by Gustave Eiffel for the 1889 World Fair",
+    "Marco Polo traveled from Venice to China along the Silk Road in the 13th century",
+    "The Panama Canal connects the Atlantic Ocean to the Pacific Ocean across Panama",
+    "Steve Jobs unveiled the first iPhone at Moscone Center in San Francisco in 2007",
+    "Mount Everest stands at 8,849 meters on the border between Nepal and Tibet",
+    "The Treaty of Versailles was signed near Paris, France on June 28, 1919",
+    "SpaceX launched its first Falcon 9 rocket from Cape Canaveral, Florida in 2010",
 ]
 
 SAMPLE_SENTENCES_QWEN3_HARD = [
@@ -232,16 +232,16 @@ SAMPLE_SENTENCES_QWEN3_HARD = [
 ]
 
 SAMPLE_SENTENCES_GEMMA_EASY = [
-    "The quick brown fox jumps over the lazy dog while the cat watches from the window",
-    "To be or not to be, that is the question that haunts every thinking mind",
-    "It was the best of times, it was the worst of times, it was the age of wisdom",
-    "The only thing we have to fear is fear itself, said Franklin Roosevelt in 1933",
-    "Ask not what your country can do for you, ask what you can do for your country",
-    "I have a dream that one day this nation will rise up and live out its true meaning",
-    "The only way to do great work is to love what you do, said Steve Jobs at Stanford",
-    "Two roads diverged in a wood, and I took the one less traveled by, and that made all",
-    "It is not the strongest of the species that survives, but the most adaptable to change",
-    "The greatest glory in living lies not in never falling, but in rising every time we fall",
+    "The coldest winter I ever spent was a summer in San Francisco, said Mark Twain",
+    "Napoleon marched his Grand Army from Paris to Moscow in the winter of 1812",
+    "The Great Wall of China stretches over 13,000 miles from Dandong to Lop Lake",
+    "Albert Einstein developed the theory of relativity while working in Bern, Switzerland",
+    "The Titanic sank in the North Atlantic Ocean after hitting an iceberg in April 1912",
+    "Neil Armstrong landed on the Moon at the Sea of Tranquility on July 20, 1969",
+    "Amazon was founded by Jeff Bezos in his garage in Bellevue, Washington in 1994",
+    "The Eiffel Tower in Paris was built by Gustave Eiffel for the 1889 World Fair",
+    "Marco Polo traveled from Venice to China along the Silk Road in the 13th century",
+    "Mount Everest stands at 8,849 meters on the border between Nepal and Tibet",
 ]
 
 SAMPLE_SENTENCES_GEMMA_HARD = [
