@@ -221,10 +221,10 @@ async function doEmbed() {
     document.getElementById('stat-max').textContent = max.toFixed(3);
     document.getElementById('stat-norm').textContent = norm.toFixed(2);
 
-    // Histogram
-    drawHistogram(arr);
-
     document.getElementById('embed-result').style.display = 'block';
+
+    // Histogram (draw after element is visible so getBoundingClientRect works)
+    requestAnimationFrame(() => drawHistogram(arr));
     document.getElementById('invert-section').style.display = 'block';
 
     // Reset invert state
@@ -324,25 +324,31 @@ async function doInvert() {
           const d = JSON.parse(raw);
           stepCount++;
 
+          if (d.total) totalSteps = d.total;
           if (d.total_steps) totalSteps = d.total_steps;
-          const pct = Math.min(100, (stepCount / totalSteps) * 100);
+          const pct = d.progress ? d.progress * 100 : Math.min(100, (stepCount / totalSteps) * 100);
           document.getElementById('progress-fill').style.width = pct + '%';
-          document.getElementById('step-info').textContent = `step ${stepCount}/${totalSteps}`;
+          document.getElementById('step-info').textContent = `step ${d.step !== undefined ? d.step + 1 : stepCount}/${totalSteps}`;
 
           const tokens = d.tokens || [];
           grid.innerHTML = '';
           for (let i = 0; i < tokens.length; i++) {
             const span = document.createElement('span');
-            const isMask = tokens[i] === '[MASK]' || tokens[i] === '<mask>';
-            const changed = prevTokens[i] !== tokens[i] && !isMask && prevTokens.length > 0;
+            // tokens can be objects {t: text, s: state} or strings
+            const tok = typeof tokens[i] === 'object' ? tokens[i] : {t: tokens[i], s: 'u'};
+            const text = tok.t || '';
+            const isMask = text === '[MASK]' || text === '<mask>' || tok.s === 'm';
+            const changed = tok.s === 'c' || (prevTokens[i] && prevTokens[i] !== text && !isMask);
 
             span.className = 'token ' + (isMask ? 'masked' : (changed ? 'just-changed' : 'revealed'));
-            span.textContent = isMask ? '\u2588' : tokens[i];
+            span.textContent = isMask ? '\u2588' : text;
             grid.appendChild(span);
           }
-          prevTokens = [...tokens];
+          prevTokens = tokens.map(t => typeof t === 'object' ? t.t : t);
 
-          if (d.cosine_sim !== undefined) {
+          if (d.cosine_similarity !== undefined) {
+            document.getElementById('cosine-sim').textContent = d.cosine_similarity.toFixed(4);
+          } else if (d.cosine_sim !== undefined) {
             document.getElementById('cosine-sim').textContent = d.cosine_sim.toFixed(4);
           }
           if (d.text) {
