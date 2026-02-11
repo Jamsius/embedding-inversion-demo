@@ -191,6 +191,7 @@ footer a:hover{color:var(--accent)}
     <span>min <span class="val" id="stat-min">-</span></span>
     <span>max <span class="val" id="stat-max">-</span></span>
     <span>norm <span class="val" id="stat-norm">-</span></span>
+    <span>entropy <span class="val" id="stat-entropy">-</span></span>
   </div>
   <canvas id="histogram"></canvas>
 </fieldset>
@@ -291,6 +292,15 @@ async function doEmbed() {
     document.getElementById('stat-min').textContent = min.toFixed(3);
     document.getElementById('stat-max').textContent = max.toFixed(3);
     document.getElementById('stat-norm').textContent = norm.toFixed(2);
+    // Shannon entropy of embedding distribution
+    const nbins = 50;
+    const emin = Math.min(...arr); const emax = Math.max(...arr);
+    const bw = (emax - emin) / nbins || 1;
+    const bins = new Array(nbins).fill(0);
+    arr.forEach(v => { const b = Math.min(nbins-1, Math.floor((v - emin) / bw)); bins[b]++; });
+    const n = arr.length;
+    const entropy = -bins.filter(b=>b>0).reduce((s,b) => s + (b/n)*Math.log2(b/n), 0);
+    document.getElementById('stat-entropy').textContent = entropy.toFixed(2);
 
     document.getElementById('embed-result').style.display = 'block';
 
