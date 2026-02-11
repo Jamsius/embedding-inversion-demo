@@ -137,7 +137,8 @@ MODELS = {}  # model_key -> dict with model, config, encoder_model, encoder_tok,
 DEVICE = None
 
 # Concurrency control
-GPU_SEMAPHORE = asyncio.Semaphore(2)  # Max 2 concurrent GPU operations
+ENCODE_SEM = asyncio.Semaphore(4)   # encode is fast, allow 4 concurrent
+DECODE_SEM = asyncio.Semaphore(3)   # decode has 32 steps, allow 3 concurrent
 ACTIVE_COUNT = 0
 WAITING_COUNT = 0
 count_lock = asyncio.Lock()
@@ -366,7 +367,7 @@ async def encode(req: EncodeRequest):
         # Wait for semaphore with timeout
         try:
             async with asyncio.timeout(30):
-                async with GPU_SEMAPHORE:
+                async with ENCODE_SEM:
                     await decrement_waiting()
                     await increment_active()
                     try:
@@ -416,7 +417,7 @@ async def decode(req: DecodeRequest):
             # Wait for semaphore with timeout
             try:
                 async with asyncio.timeout(30):
-                    async with GPU_SEMAPHORE:
+                    async with DECODE_SEM:
                         await decrement_waiting()
                         await increment_active()
                         try:
