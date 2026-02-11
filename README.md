@@ -1,4 +1,4 @@
-# Embedding Inversion via Conditional Masked Diffusion &nbsp; [![GitHub](https://img.shields.io/badge/GitHub-black?logo=github)](https://github.com/hanxiao/embedding-inversion-demo) [![Paper](https://img.shields.io/badge/Paper-blue?logo=arxiv)](technical-report.pdf) [![Demo](https://img.shields.io/badge/Demo-green?logo=googlechrome)](https://embedding-inversion-demo.jina.ai)
+# Embedding Inversion via Conditional Masked Diffusion &nbsp; [![GitHub](https://img.shields.io/badge/GitHub-black?logo=github)](https://github.com/jina-ai/embedding-inversion-demo) [![Paper](https://img.shields.io/badge/Paper-blue?logo=arxiv)](technical-report.pdf) [![Demo](https://img.shields.io/badge/Demo-green?logo=googlechrome)](https://embedding-inversion-demo.jina.ai)
 
 Text embeddings are widely assumed to be safe, irreversible representations. This project demonstrates otherwise: given only an embedding vector, we reconstruct the original text using conditional masked diffusion.
 
@@ -116,7 +116,7 @@ This encodes the input text, then runs diffusion decoding to reconstruct it from
   title        = {Embedding Inversion via Conditional Masked Diffusion Language Models},
   institution  = {Jina AI by Elastic},
   year         = {2025},
-  url          = {https://github.com/hanxiao/embedding-inversion-demo},
+  url          = {https://github.com/jina-ai/embedding-inversion-demo},
   note         = {Live demo: https://embedding-inversion-demo.jina.ai}
 }
 ```
