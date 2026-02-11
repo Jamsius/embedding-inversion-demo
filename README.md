@@ -1,5 +1,7 @@
 # Embedding Inversion via Conditional Masked Diffusion
 
+**Live Demo: https://embedding-inversion-demo.jina.ai**
+
 Text embeddings are widely assumed to be safe, irreversible representations. This project demonstrates otherwise: given only an embedding vector, we reconstruct the original text using conditional masked diffusion.
 
 ![Architecture](architecture.png)
