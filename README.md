@@ -59,14 +59,14 @@ python train.py --config configs/v2_qwen3.yaml --resume
 ![Training Curve](training-curve.png)
 ![Validation Loss](valloss-curve.png)
 
-Four encoders trained in parallel on A100-40GB GPUs. Qwen3-Embedding reaches 78% token accuracy at 53K steps, leading the pack. All models use the same 78M-parameter MDLM backbone with AdaLN-Zero conditioning.
+Four encoders trained in parallel on A100-40GB GPUs. Qwen3-Embedding leads with 81.3% token accuracy at 72.5K steps. All models use the same 78M-parameter MDLM backbone with AdaLN-Zero conditioning.
 
 | Encoder | Vocab | Acc | Steps | Batch | Data |
 |---------|-------|-----|-------|-------|------|
-| Qwen3-Embedding-0.6B | 152K | 78.0% | 53K | 900 | 2M multilingual |
-| jina-embeddings-v3 | 250K | 74.1% | 48K | 600 | 2M en |
-| EmbeddingGemma-300m | 262K | 74.4% | 33K | 500 | 2M multilingual |
-| jina-embeddings-v3 (ML) | 250K | 71.4% | 42K | 600 | 2M multilingual |
+| Qwen3-Embedding-0.6B | 152K | 81.3% | 72.5K | 900 | 2M multilingual |
+| jina-embeddings-v3 | 250K | 77.3% | 67K | 600 | 2M en |
+| EmbeddingGemma-300m | 262K | 78.5% | 47.5K | 500 | 2M multilingual |
+| jina-embeddings-v3 (ML) | 250K | 75.2% | 60K | 600 | 2M multilingual |
 
 Key training parameters (in config yaml):
 - `batch_size`: per-GPU batch size (auto-detected if not set)
