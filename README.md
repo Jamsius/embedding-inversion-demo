@@ -12,6 +12,8 @@ The approach is encoder-agnostic by construction. The embedding vector enters on
 
 ### Architecture
 
+![Architecture](architecture.png)
+
 ```
 Input text --> Encoder (Qwen3-Embedding-0.6B) --> e in R^1024
                                                       |
