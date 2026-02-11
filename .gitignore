@@ -11,3 +11,4 @@ venv/
 venv/
 data_*/
 __pycache__/
+latex/
