@@ -177,8 +177,8 @@ MODELS = {}  # model_key -> dict with model, config, encoder_model, encoder_tok,
 DEVICE = None
 
 # Concurrency control
-ENCODE_SEM = asyncio.Semaphore(4)   # encode is fast, allow 4 concurrent
-DECODE_SEM = asyncio.Semaphore(3)   # decode has 32 steps, allow 3 concurrent
+ENCODE_SEM = asyncio.Semaphore(8)   # encode is fast, allow 4 concurrent
+DECODE_SEM = asyncio.Semaphore(6)   # decode has 32 steps, allow 3 concurrent
 ACTIVE_COUNT = 0
 WAITING_COUNT = 0
 count_lock = asyncio.Lock()
