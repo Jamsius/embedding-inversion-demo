@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 """
-Interactive Embedding Inversion Demo Server.
+Interactive Embedding Inversion Demo Server - Multi-Model Support.
 Runs on port 8080. Serves a TurboPuffer-style dark UI for real-time diffusion visualization.
 
-Architecture matching the qwen3_best.pt checkpoint:
-  - Standalone DiT-style transformer (no mmBERT dependency)
-  - AdaLN conditioning (scale + shift, no alpha gate)
-  - 8 blocks, hidden_dim=768, num_heads=12, ff_dim=3072
-  - vocab_size=151936, max_seq_len=32
+Supports both Qwen3-Embedding and EmbeddingGemma models.
 """
 
 import sys
@@ -121,19 +117,26 @@ def last_token_pool(hidden, attention_mask):
 
 
 # ---------------------------------------------------------------------------
-# Globals
+# Globals - Multi-model support
 # ---------------------------------------------------------------------------
 
 app = FastAPI()
 
-MODEL = None
-CONFIG = None
-ENCODER_MODEL = None
-ENCODER_TOK = None
-DECODER_TOK = None
+# Each model has its own: MODEL, CONFIG, ENCODER_MODEL, ENCODER_TOK, DECODER_TOK
+MODELS = {}  # model_key -> dict with model, config, encoder_model, encoder_tok, decoder_tok
 DEVICE = None
 
-CHECKPOINT_PATH = str(Path.home() / "checkpoints" / "qwen3_best.pt")
+# Model configurations
+MODEL_CONFIGS = {
+    "qwen3": {
+        "checkpoint_path": str(Path.home() / "checkpoints" / "qwen3_best.pt"),
+        "config_path": "configs/v2_qwen3.yaml",
+    },
+    "gemma": {
+        "checkpoint_path": str(Path.home() / "checkpoints" / "gemma_best.pt"),
+        "config_path": "configs/v2_gemma.yaml",
+    },
+}
 
 SAMPLE_SENTENCES = [
     "The quick brown fox jumps over the lazy dog",
@@ -159,43 +162,69 @@ SAMPLE_SENTENCES = [
 ]
 
 
-def load_models():
-    global MODEL, CONFIG, ENCODER_MODEL, ENCODER_TOK, DECODER_TOK, DEVICE
+def load_model(model_key):
+    """Load a specific model (qwen3 or gemma)."""
+    global DEVICE
+    
+    if DEVICE is None:
+        DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Device: {DEVICE}")
 
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {DEVICE}")
+    cfg = MODEL_CONFIGS[model_key]
+    print(f"\n{'='*60}")
+    print(f"Loading {model_key.upper()} model")
+    print(f"{'='*60}")
 
-    # Load checkpoint (needs pickle_module workaround for this file)
-    print(f"Loading checkpoint {CHECKPOINT_PATH} ...")
-    with open(CHECKPOINT_PATH, "rb") as f:
+    # Load checkpoint
+    ckpt_path = cfg["checkpoint_path"]
+    print(f"Loading checkpoint {ckpt_path} ...")
+    with open(ckpt_path, "rb") as f:
         ckpt = torch.load(f, map_location=DEVICE, pickle_module=pickle)
-    CONFIG = ckpt["config"]
+    config = ckpt["config"]
     print(f"  step={ckpt['step']}, val_loss={ckpt['best_val_loss']:.4f}")
-    print(f"  config: vocab={CONFIG['model']['vocab_size']}, "
-          f"seq_len={CONFIG['model']['max_seq_len']}, "
-          f"layers={CONFIG['model']['num_layers']}")
+    print(f"  config: vocab={config['model']['vocab_size']}, "
+          f"seq_len={config['model']['max_seq_len']}, "
+          f"layers={config['model']['num_layers']}, "
+          f"embedding_cond_dim={config['model']['embedding_cond_dim']}")
 
-    MODEL = ConditionalMDLM(CONFIG).to(DEVICE)
+    # Create model
+    model = ConditionalMDLM(config).to(DEVICE)
     state = {k: v.float() for k, v in ckpt["ema_state_dict"].items()}
-    MODEL.load_state_dict(state, strict=True)
-    MODEL.eval()
+    model.load_state_dict(state, strict=True)
+    model.eval()
     print("  Model loaded OK")
     del ckpt
 
     # Encoder
-    enc_name = CONFIG["model"]["encoder_model"]
+    enc_name = config["model"]["encoder_model"]
     print(f"Loading encoder: {enc_name} ...")
-    ENCODER_TOK = AutoTokenizer.from_pretrained(enc_name, trust_remote_code=True)
-    ENCODER_MODEL = AutoModel.from_pretrained(enc_name, trust_remote_code=True).to(DEVICE).eval()
+    encoder_tok = AutoTokenizer.from_pretrained(enc_name, trust_remote_code=True)
+    encoder_model = AutoModel.from_pretrained(enc_name, trust_remote_code=True).to(DEVICE).eval()
     print("  Encoder loaded OK")
 
-    # Decoder tokenizer (same model name, just the tokenizer)
-    dec_name = CONFIG["model"]["decoder_tokenizer"]
+    # Decoder tokenizer
+    dec_name = config["model"]["decoder_tokenizer"]
     print(f"Loading decoder tokenizer: {dec_name} ...")
-    DECODER_TOK = AutoTokenizer.from_pretrained(dec_name, trust_remote_code=True)
+    decoder_tok = AutoTokenizer.from_pretrained(dec_name, trust_remote_code=True)
     print("  Decoder tokenizer loaded OK")
 
+    MODELS[model_key] = {
+        "model": model,
+        "config": config,
+        "encoder_model": encoder_model,
+        "encoder_tok": encoder_tok,
+        "decoder_tok": decoder_tok,
+    }
+    print(f"{model_key.upper()} ready")
+
+
+def load_models():
+    """Load all models on startup."""
+    for model_key in MODEL_CONFIGS:
+        load_model(model_key)
+    print("\n" + "="*60)
     print("=== Ready ===")
+    print("="*60 + "\n")
 
 
 # ---------------------------------------------------------------------------
@@ -204,10 +233,12 @@ def load_models():
 
 class EncodeRequest(BaseModel):
     text: str
+    model: str = "qwen3"
 
 class DecodeRequest(BaseModel):
     embedding: List[float]
     steps: int = 32
+    model: str = "qwen3"
 
 class EncodeResponse(BaseModel):
     embedding: List[float]
@@ -227,12 +258,17 @@ async def index():
 
 @app.post("/encode", response_model=EncodeResponse)
 async def encode(req: EncodeRequest):
+    model_key = req.model.lower()
+    if model_key not in MODELS:
+        return {"error": f"Unknown model: {model_key}"}
+    
+    m = MODELS[model_key]
     with torch.no_grad():
-        inputs = ENCODER_TOK(
+        inputs = m["encoder_tok"](
             [req.text], return_tensors="pt",
             padding=True, truncation=True, max_length=512
         ).to(DEVICE)
-        out = ENCODER_MODEL(**inputs)
+        out = m["encoder_model"](**inputs)
         emb = last_token_pool(out.last_hidden_state, inputs["attention_mask"])
         emb = F.normalize(emb, dim=-1)
     return EncodeResponse(embedding=emb[0].cpu().tolist(), text=req.text)
@@ -240,12 +276,23 @@ async def encode(req: EncodeRequest):
 
 @app.post("/decode")
 async def decode(req: DecodeRequest):
+    model_key = req.model.lower()
+    if model_key not in MODELS:
+        return {"error": f"Unknown model: {model_key}"}
+    
+    m = MODELS[model_key]
+    model = m["model"]
+    config = m["config"]
+    encoder_model = m["encoder_model"]
+    encoder_tok = m["encoder_tok"]
+    decoder_tok = m["decoder_tok"]
+
     async def generate():
         embedding = torch.tensor([req.embedding], device=DEVICE, dtype=torch.float32)
         embedding = F.normalize(embedding, dim=-1)
 
-        L = CONFIG["model"]["max_seq_len"]
-        mask_id = CONFIG["model"]["mask_token_id"]
+        L = config["model"]["max_seq_len"]
+        mask_id = config["model"]["mask_token_id"]
         steps = max(1, min(req.steps, L))
         per_step = max(1, L // steps)
 
@@ -257,7 +304,7 @@ async def decode(req: DecodeRequest):
                 if unmasked.all():
                     break
 
-                logits = MODEL(ids, embedding)
+                logits = model(ids, embedding)
                 probs = F.softmax(logits[0], dim=-1)
                 confidence, preds = probs.max(dim=-1)
                 confidence[unmasked] = -1.0
@@ -278,13 +325,13 @@ async def decode(req: DecodeRequest):
                     if tid == mask_id:
                         tokens.append({"t": "[MASK]", "s": "m"})  # masked
                     else:
-                        tok_text = DECODER_TOK.decode([tid])
+                        tok_text = decoder_tok.decode([tid])
                         state = "c" if i in topk_set else "u"  # changed / unchanged
                         tokens.append({"t": tok_text, "s": state})
 
                 # Decode full text (skip mask tokens)
                 clean = [t for t in ids[0].cpu().tolist() if t != mask_id]
-                text = DECODER_TOK.decode(clean, skip_special_tokens=True)
+                text = decoder_tok.decode(clean, skip_special_tokens=True)
 
                 evt = {
                     "step": step,
@@ -298,14 +345,14 @@ async def decode(req: DecodeRequest):
 
         # Final: compute cosine similarity by re-encoding decoded text
         clean = [t for t in ids[0].cpu().tolist() if t != mask_id]
-        final_text = DECODER_TOK.decode(clean, skip_special_tokens=True)
+        final_text = decoder_tok.decode(clean, skip_special_tokens=True)
 
         with torch.no_grad():
-            inputs2 = ENCODER_TOK(
+            inputs2 = encoder_tok(
                 [final_text], return_tensors="pt",
                 padding=True, truncation=True, max_length=512
             ).to(DEVICE)
-            out2 = ENCODER_MODEL(**inputs2)
+            out2 = encoder_model(**inputs2)
             emb2 = last_token_pool(out2.last_hidden_state, inputs2["attention_mask"])
             emb2 = F.normalize(emb2, dim=-1)
             cos_sim = F.cosine_similarity(embedding, emb2).item()
@@ -317,7 +364,7 @@ async def decode(req: DecodeRequest):
             if tid == mask_id:
                 tokens.append({"t": "[MASK]", "s": "m"})
             else:
-                tokens.append({"t": DECODER_TOK.decode([tid]), "s": "u"})
+                tokens.append({"t": decoder_tok.decode([tid]), "s": "u"})
 
         evt = {
             "step": steps,
@@ -340,7 +387,7 @@ async def get_random():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "device": str(DEVICE)}
+    return {"status": "ok", "device": str(DEVICE), "models": list(MODELS.keys())}
 
 
 if __name__ == "__main__":
