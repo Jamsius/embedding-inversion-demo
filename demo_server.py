@@ -155,21 +155,21 @@ MODEL_CONFIGS = {
 }
 
 SAMPLE_SENTENCES_QWEN3_EASY = [
-    "The quick brown fox jumps over the lazy dog",
-    "To be or not to be, that is the question",
-    "I think therefore I am said Descartes",
-    "All that glitters is not gold",
-    "The only thing we have to fear is fear itself",
-    "That is one small step for man, one giant leap for mankind",
-    "In the beginning God created the heavens and the earth",
-    "It was the best of times, it was the worst of times",
-    "The unexamined life is not worth living",
-    "Ask not what your country can do for you",
-    "Knowledge is power, said Francis Bacon",
-    "Give me liberty or give me death",
-    "Elementary my dear Watson, the game is afoot",
-    "Houston we have a problem",
-    "May the force be with you, always",
+    "The quick brown fox jumps over the lazy dog while the cat watches from the window",
+    "To be or not to be, that is the question that haunts every thinking mind",
+    "It was the best of times, it was the worst of times, it was the age of wisdom",
+    "The only thing we have to fear is fear itself, said Franklin Roosevelt in 1933",
+    "That is one small step for man, one giant leap for mankind, said Neil Armstrong",
+    "In the beginning God created the heavens and the earth, and the earth was without form",
+    "Ask not what your country can do for you, ask what you can do for your country",
+    "I have a dream that one day this nation will rise up and live out its true meaning",
+    "We hold these truths to be self evident, that all men are created equal and free",
+    "The only way to do great work is to love what you do, said Steve Jobs at Stanford",
+    "Two roads diverged in a wood, and I took the one less traveled by, and that made all",
+    "It is not the strongest of the species that survives, but the most adaptable to change",
+    "The greatest glory in living lies not in never falling, but in rising every time we fall",
+    "In three words I can sum up everything I have learned about life: it goes on, said Frost",
+    "Do not go gentle into that good night, rage rage against the dying of the light",
 ]
 
 SAMPLE_SENTENCES_QWEN3_HARD = [
@@ -191,16 +191,16 @@ SAMPLE_SENTENCES_QWEN3_HARD = [
 ]
 
 SAMPLE_SENTENCES_GEMMA_EASY = [
-    "The quick brown fox jumps over the lazy dog",
-    "To be or not to be, that is the question",
-    "All that glitters is not gold",
-    "I think therefore I am said Descartes",
-    "The only thing we have to fear is fear itself",
-    "In the beginning God created the heavens and the earth",
-    "It was the best of times, it was the worst of times",
-    "Knowledge is power, said Francis Bacon",
-    "May the force be with you, always",
-    "Houston we have a problem",
+    "The quick brown fox jumps over the lazy dog while the cat watches from the window",
+    "To be or not to be, that is the question that haunts every thinking mind",
+    "It was the best of times, it was the worst of times, it was the age of wisdom",
+    "The only thing we have to fear is fear itself, said Franklin Roosevelt in 1933",
+    "Ask not what your country can do for you, ask what you can do for your country",
+    "I have a dream that one day this nation will rise up and live out its true meaning",
+    "The only way to do great work is to love what you do, said Steve Jobs at Stanford",
+    "Two roads diverged in a wood, and I took the one less traveled by, and that made all",
+    "It is not the strongest of the species that survives, but the most adaptable to change",
+    "The greatest glory in living lies not in never falling, but in rising every time we fall",
 ]
 
 SAMPLE_SENTENCES_GEMMA_HARD = [
