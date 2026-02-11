@@ -5,472 +5,365 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Embedding Inversion</title>
 <style>
-  :root {
-    --bg: #ffffff;
-    --surface: #fafafa;
-    --border: #e5e5e5;
-    --text: #1a1a1a;
-    --text-dim: #737373;
-    --accent: #7c6aef;
-    --accent2: #9061f0;
-    --glow: rgba(124,106,239,0.25);
-    --green: #10b981;
-    --mask-bg: #f5f5f5;
-    --mono: 'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace;
-    --sans: 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  }
-  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-  html { font-size:15px; }
-  body {
-    font-family: var(--sans);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-  ::selection { background: var(--accent); color: #fff; }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#fff;--surface:#f9f9fb;--border:#e8e8ec;
+  --text:#111;--dim:#888;--accent:#6c5ce7;--accent-light:#a29bfe;
+  --green:#00b894;--mask:#d0d0d8;
+  --mono:'SF Mono','Fira Code','JetBrains Mono','Cascadia Code',monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --radius:10px;
+}
+html{font-size:15px}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+::selection{background:var(--accent);color:#fff}
 
-  /* layout */
-  .wrap { max-width:960px; margin:0 auto; padding:2.5rem 1.5rem 4rem; }
+.wrap{max-width:720px;margin:0 auto;padding:3rem 1.5rem 4rem}
 
-  /* header */
-  header { margin-bottom:2.5rem; }
-  h1 {
-    font-size:2rem; font-weight:700; letter-spacing:-0.03em;
-    background: linear-gradient(135deg,var(--accent),var(--accent2));
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    background-clip:text;
-  }
-  .tagline { color:var(--text-dim); margin-top:.35rem; font-size:.9rem; }
+header{text-align:center;margin-bottom:2.5rem}
+h1{font-size:1.8rem;font-weight:700;letter-spacing:-0.02em;color:var(--text)}
+.sub{color:var(--dim);font-size:.85rem;margin-top:.3rem;font-family:var(--mono)}
 
-  /* cards */
-  .card {
-    background: var(--surface);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:1.4rem;
-    margin-bottom:1.4rem;
-  }
-  .card-label {
-    font-size:.7rem; font-weight:600; text-transform:uppercase;
-    letter-spacing:.08em; color:var(--text-dim); margin-bottom:.75rem;
-  }
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.25rem}
+.card-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:.75rem;font-weight:600}
 
-  /* input row with dice icon */
-  .input-row { display:flex; gap:.6rem; }
-  .input-wrapper {
-    flex:1;
-    position:relative;
-    display:flex;
-    align-items:center;
-  }
-  .input-wrapper input {
-    width:100%;
-    background:#fff;
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:.65rem 2.5rem .65rem .9rem;
-    color:var(--text);
-    font-family:var(--mono);
-    font-size:.9rem;
-    transition: border-color .2s;
-  }
-  .input-wrapper input:focus { outline:none; border-color:var(--accent); }
-  .input-wrapper input::placeholder { color:var(--text-dim); }
-  .dice-btn {
-    position:absolute;
-    right:8px;
-    background:none;
-    border:none;
-    cursor:pointer;
-    font-size:1.2rem;
-    padding:4px;
-    line-height:1;
-    opacity:.5;
-    transition: opacity .2s, transform .15s;
-  }
-  .dice-btn:hover { opacity:1; }
-  .dice-btn:active { transform:scale(.9); }
+/* input area */
+.input-row{position:relative;display:flex;align-items:center}
+.input-row input{
+  width:100%;padding:.7rem 2.8rem .7rem .9rem;
+  border:1px solid var(--border);border-radius:8px;
+  font-family:var(--mono);font-size:.9rem;
+  background:#fff;color:var(--text);outline:none;
+  transition:border-color .2s;
+}
+.input-row input:focus{border-color:var(--accent)}
+.input-row input::placeholder{color:#bbb}
+.dice{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:1.2rem;
+  opacity:.5;transition:opacity .15s;
+}
+.dice:hover{opacity:1}
 
-  /* buttons */
-  .btn {
-    border:none; border-radius:8px; padding:.65rem 1.2rem;
-    font-size:.85rem; font-weight:600; cursor:pointer;
-    transition: transform .15s, box-shadow .2s, opacity .2s;
-    white-space: nowrap;
-  }
-  .btn:active { transform:scale(.97); }
-  .btn-primary {
-    background:linear-gradient(135deg,var(--accent),#9061f0);
-    color:#fff; box-shadow:0 2px 12px rgba(124,106,239,.25);
-  }
-  .btn-primary:hover { box-shadow:0 4px 20px rgba(124,106,239,.4); }
-  .btn-primary:disabled { opacity:.5; cursor:default; box-shadow:none; }
+/* buttons */
+.btn{
+  display:inline-block;padding:.6rem 1.6rem;
+  background:var(--accent);color:#fff;border:none;border-radius:8px;
+  font-family:var(--sans);font-size:.85rem;font-weight:600;
+  cursor:pointer;transition:all .15s;margin-top:.75rem;
+}
+.btn:hover{background:#5b4bd5}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-outline{
+  background:transparent;color:var(--accent);
+  border:1.5px solid var(--accent);
+}
+.btn-outline:hover{background:var(--accent);color:#fff}
 
-  /* embedding viz - histogram */
-  .emb-row { display:flex; gap:1.2rem; align-items:stretch; flex-wrap:wrap; }
-  .emb-canvas-wrap {
-    flex:1; min-width:200px; height:180px;
-    background:#fff; border:1px solid var(--border); border-radius:8px;
-    padding:12px;
-    overflow:hidden;
-  }
-  #embCanvas { width:100%; height:100%; display:block; }
-  .emb-stats {
-    display:flex; flex-direction:column; justify-content:center; gap:.25rem;
-    min-width:140px;
-  }
-  .stat { font-size:.75rem; color:var(--text-dim); }
-  .stat span { color:var(--accent); font-family:var(--mono); font-weight:600; }
+/* embedding viz */
+#embed-result{display:none}
+.stats-row{
+  display:flex;gap:1.5rem;font-family:var(--mono);font-size:.8rem;
+  color:var(--dim);margin-bottom:.75rem;
+}
+.stats-row span{white-space:nowrap}
+.stats-row .val{color:var(--text);font-weight:600}
 
-  /* progress */
-  .progress-track {
-    height:3px; background:#f0f0f0;
-    border-radius:2px; overflow:hidden; margin-bottom:1rem;
-  }
-  .progress-fill {
-    height:100%; width:0%;
-    background:linear-gradient(90deg,var(--accent),var(--accent2));
-    transition: width .12s linear;
-  }
+canvas#histogram{width:100%;height:120px;border-radius:6px;background:#fff;border:1px solid var(--border)}
 
-  /* token grid */
-  .token-grid {
-    display:flex; flex-wrap:wrap; gap:6px;
-    min-height:48px; align-items:center;
-    margin-bottom:1.2rem;
-  }
-  .token-grid .placeholder {
-    color:var(--text-dim); font-size:.85rem; padding:1.5rem 0; width:100%; text-align:center;
-  }
-  .tok {
-    display:inline-block;
-    padding:.35rem .55rem;
-    border-radius:5px;
-    font-family:var(--mono);
-    font-size:.82rem;
-    line-height:1.3;
-    border:1px solid transparent;
-    transition: background .3s, color .3s, border-color .3s, box-shadow .3s, transform .2s;
-  }
-  .tok.masked {
-    background:var(--mask-bg); color:var(--text-dim);
-    border-color:#e0e0e0;
-  }
-  .tok.revealed {
-    background:#f3f0ff; color:var(--text);
-    border-color:#d8d0ff;
-  }
-  .tok.changed {
-    animation: pop .5s ease-out;
-    background:#e8e0ff;
-    color:var(--text);
-    border-color:var(--accent);
-    box-shadow:0 0 14px var(--glow);
-  }
-  @keyframes pop {
-    0%   { transform:scale(1.18); box-shadow:0 0 24px var(--glow); }
-    100% { transform:scale(1);   box-shadow:0 0 14px var(--glow); }
-  }
+/* invert section */
+#invert-section{display:none}
+#invert-result{display:none}
 
-  /* decoded text */
-  .decoded-box {
-    background:#fff; border:1px solid var(--border);
-    border-radius:8px; padding:.85rem 1rem;
-    font-family:var(--mono); font-size:.9rem; line-height:1.6;
-    color: var(--text);
-    min-height:2.5rem;
-    word-break: break-word;
-  }
+/* token grid */
+.token-grid{
+  display:flex;flex-wrap:wrap;gap:6px;
+  font-family:var(--mono);font-size:.85rem;
+  margin-top:.75rem;
+}
+.token{
+  padding:4px 8px;border-radius:5px;
+  transition:all .25s ease;
+  border:1px solid transparent;
+}
+.token.masked{background:var(--surface);color:var(--mask);border-color:var(--border)}
+.token.revealed{background:#fff;color:var(--text);font-weight:600;border-color:var(--border)}
+.token.just-changed{
+  background:#f0edff;color:var(--accent);font-weight:700;
+  border-color:var(--accent-light);
+  animation:pop .3s ease;
+}
+@keyframes pop{0%{transform:scale(1.15)}100%{transform:scale(1)}}
 
-  /* metrics row */
-  .metrics { display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap; }
-  .metric-card {
-    flex:1; min-width:140px;
-    background:#fff;
-    border:1px solid var(--border);
-    border-radius:8px; padding:.85rem 1rem;
-  }
-  .metric-label {
-    font-size:.65rem; text-transform:uppercase; letter-spacing:.07em;
-    color:var(--text-dim); margin-bottom:.2rem;
-  }
-  .metric-value {
-    font-size:1.3rem; font-weight:700; font-family:var(--mono);
-    color:var(--accent);
-  }
-  .metric-value.sim { color:var(--green); }
-  .metric-value.small {
-    font-size:.82rem; font-weight:400; color:var(--text);
-    line-height:1.5; word-break:break-word;
-  }
+/* comparison */
+.compare{margin-top:1rem;font-size:.85rem}
+.compare-row{display:flex;gap:.5rem;margin-bottom:.4rem;align-items:baseline}
+.compare-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);width:90px;flex-shrink:0;font-weight:600}
+.compare-text{font-family:var(--mono);color:var(--text)}
 
-  /* step counter */
-  .step-info {
-    font-size:.75rem; color:var(--text-dim); font-family:var(--mono);
-    margin-bottom:.6rem;
-  }
+.metric{
+  display:inline-flex;align-items:center;gap:.4rem;
+  font-family:var(--mono);font-size:.8rem;color:var(--dim);
+  margin-top:.5rem;
+}
+.metric .val{color:var(--green);font-weight:700;font-size:.95rem}
 
-  /* spinner */
-  @keyframes spin { to { transform:rotate(360deg); } }
-  .spinner {
-    display:inline-block; width:14px; height:14px;
-    border:2px solid #e5e5e5;
-    border-top-color:var(--accent);
-    border-radius:50%; animation:spin .7s linear infinite;
-    vertical-align:middle; margin-right:6px;
-  }
+.step-info{font-family:var(--mono);font-size:.75rem;color:var(--dim);margin-top:.5rem}
 
-  /* responsive */
-  @media (max-width:600px) {
-    .wrap { padding:1.5rem 1rem 3rem; }
-    h1 { font-size:1.5rem; }
-    .input-row { flex-direction:column; }
-    .emb-row { flex-direction:column; }
-  }
+/* progress */
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:.5rem;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .15s;width:0%}
+
+footer{text-align:center;margin-top:2rem;font-size:.75rem;color:var(--dim)}
+footer a{color:var(--accent);text-decoration:none}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>Embedding Inversion</h1>
-    <div class="tagline">Encode a sentence into a 1024-d vector, then watch diffusion decode it back, token by token.</div>
-  </header>
 
-  <!-- Input -->
+<header>
+  <h1>Embedding Inversion</h1>
+  <div class="sub">Qwen3-Embedding | Conditional Masked Diffusion</div>
+</header>
+
+<!-- Step 1: Input & Embed -->
+<div class="card">
+  <div class="card-label">Input</div>
+  <div class="input-row">
+    <input type="text" id="input-text" placeholder="Enter a sentence..." />
+    <button class="dice" onclick="randomSentence()" title="Random sentence">&#x1F3B2;</button>
+  </div>
+  <button class="btn" id="btn-embed" onclick="doEmbed()">Embed</button>
+</div>
+
+<!-- Embedding Result -->
+<div class="card" id="embed-result">
+  <div class="card-label">Embedding</div>
+  <div class="stats-row">
+    <span>dim <span class="val" id="stat-dim">-</span></span>
+    <span>min <span class="val" id="stat-min">-</span></span>
+    <span>max <span class="val" id="stat-max">-</span></span>
+    <span>norm <span class="val" id="stat-norm">-</span></span>
+  </div>
+  <canvas id="histogram"></canvas>
+</div>
+
+<!-- Step 2: Invert -->
+<div id="invert-section">
   <div class="card">
-    <div class="card-label">Input</div>
-    <div class="input-row">
-      <div class="input-wrapper">
-        <input type="text" id="inp" placeholder="Type a sentence..." value="Stars shine brightest in the darkest nights" spellcheck="false">
-        <button class="dice-btn" onclick="doRandom()" title="Random sentence">🎲</button>
-      </div>
-      <button class="btn btn-primary" id="goBtn" onclick="run()">Invert &rarr;</button>
-    </div>
-  </div>
+    <div class="card-label">Diffusion Decoding</div>
+    <button class="btn btn-outline" id="btn-invert" onclick="doInvert()">Invert</button>
+    <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="step-info" id="step-info"></div>
 
-  <!-- Embedding -->
-  <div class="card" id="embCard" style="display:none">
-    <div class="card-label">Embedding vector <span style="opacity:.5">(1024-d)</span></div>
-    <div class="emb-row">
-      <div class="emb-canvas-wrap"><canvas id="embCanvas"></canvas></div>
-      <div class="emb-stats">
-        <div class="stat">min <span id="embMin">-</span></div>
-        <div class="stat">max <span id="embMax">-</span></div>
-        <div class="stat">norm <span id="embNorm">-</span></div>
-      </div>
-    </div>
-  </div>
+    <div id="invert-result">
+      <div class="token-grid" id="token-grid"></div>
 
-  <!-- Diffusion -->
-  <div class="card" id="diffCard">
-    <div class="card-label">Diffusion decoding</div>
-    <div class="step-info" id="stepInfo"></div>
-    <div class="progress-track"><div class="progress-fill" id="pbar"></div></div>
-    <div class="token-grid" id="tgrid">
-      <div class="placeholder">Press <strong>Invert</strong> to begin</div>
-    </div>
-    <div class="card-label" style="margin-top:.5rem">Reconstructed text</div>
-    <div class="decoded-box" id="decoded">&mdash;</div>
-    <div class="metrics" id="metricsRow" style="display:none">
-      <div class="metric-card">
-        <div class="metric-label">Cosine similarity</div>
-        <div class="metric-value sim" id="mCos">&mdash;</div>
+      <div class="compare">
+        <div class="compare-row">
+          <span class="compare-label">Original</span>
+          <span class="compare-text" id="original-text"></span>
+        </div>
+        <div class="compare-row">
+          <span class="compare-label">Recovered</span>
+          <span class="compare-text" id="recovered-text"></span>
+        </div>
       </div>
-      <div class="metric-card">
-        <div class="metric-label">Original</div>
-        <div class="metric-value small" id="mOrig">&mdash;</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Steps</div>
-        <div class="metric-value" id="mSteps">&mdash;</div>
+
+      <div class="metric">
+        cosine similarity <span class="val" id="cosine-sim">-</span>
       </div>
     </div>
   </div>
 </div>
 
+<footer>
+  <a href="https://github.com/hanxiao/embedding-inversion-demo">github</a>
+</footer>
+
+</div>
+
 <script>
-const $ = id => document.getElementById(id);
+let currentEmbedding = null;
+let currentText = '';
 
-let embedding = null;
-let running = false;
-
-async function doRandom() {
+async function randomSentence() {
   const r = await fetch('/random');
   const d = await r.json();
-  $('inp').value = d.text;
+  document.getElementById('input-text').value = d.text;
 }
 
-async function run() {
-  if (running) return;
-  const text = $('inp').value.trim();
+async function doEmbed() {
+  const text = document.getElementById('input-text').value.trim();
   if (!text) return;
-  running = true;
-  $('goBtn').disabled = true;
-  $('goBtn').innerHTML = '<span class="spinner"></span>Encoding...';
-  $('metricsRow').style.display = 'none';
-  $('decoded').textContent = '\u2014';
-  $('stepInfo').textContent = '';
-  $('pbar').style.width = '0%';
-  $('tgrid').innerHTML = '<div class="placeholder"><span class="spinner"></span> Encoding input...</div>';
+  currentText = text;
+
+  const btn = document.getElementById('btn-embed');
+  btn.disabled = true;
+  btn.textContent = 'Encoding...';
 
   try {
-    // Encode
-    const er = await fetch('/encode', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+    const r = await fetch('/encode', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({text})
     });
-    const ed = await er.json();
-    embedding = ed.embedding;
-    showEmbedding(embedding);
-    $('mOrig').textContent = text;
+    const d = await r.json();
+    currentEmbedding = d.embedding;
 
-    // Decode (SSE)
-    $('goBtn').innerHTML = '<span class="spinner"></span>Decoding...';
-    initMaskGrid();
+    // Stats
+    const arr = d.embedding;
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    const norm = Math.sqrt(arr.reduce((s,v) => s + v*v, 0));
+    document.getElementById('stat-dim').textContent = arr.length;
+    document.getElementById('stat-min').textContent = min.toFixed(3);
+    document.getElementById('stat-max').textContent = max.toFixed(3);
+    document.getElementById('stat-norm').textContent = norm.toFixed(2);
 
-    const dr = await fetch('/decode', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({embedding, steps: 32})
+    // Histogram
+    drawHistogram(arr);
+
+    document.getElementById('embed-result').style.display = 'block';
+    document.getElementById('invert-section').style.display = 'block';
+
+    // Reset invert state
+    document.getElementById('invert-result').style.display = 'none';
+    document.getElementById('progress-fill').style.width = '0%';
+    document.getElementById('step-info').textContent = '';
+    document.getElementById('btn-invert').disabled = false;
+  } catch(e) {
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Embed';
+  }
+}
+
+function drawHistogram(arr) {
+  const canvas = document.getElementById('histogram');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const nBins = 50;
+  const min = Math.min(...arr), max = Math.max(...arr);
+  const range = max - min || 1;
+  const bins = new Array(nBins).fill(0);
+  for (const v of arr) {
+    const i = Math.min(Math.floor((v - min) / range * nBins), nBins - 1);
+    bins[i]++;
+  }
+  const maxBin = Math.max(...bins);
+
+  const pad = {l:0, r:0, t:8, b:0};
+  const pw = (W - pad.l - pad.r) / nBins;
+
+  for (let i = 0; i < nBins; i++) {
+    const h = (bins[i] / maxBin) * (H - pad.t - pad.b);
+    const x = pad.l + i * pw;
+    const y = H - pad.b - h;
+
+    const t = i / nBins;
+    const r2 = Math.round(108 + t * 50);
+    const g = Math.round(92 + t * 40);
+    const b = Math.round(231 + t * 10);
+    ctx.fillStyle = `rgb(${r2},${g},${b})`;
+    ctx.fillRect(x, y, pw - 1, h);
+  }
+}
+
+async function doInvert() {
+  if (!currentEmbedding) return;
+
+  const btn = document.getElementById('btn-invert');
+  btn.disabled = true;
+  btn.textContent = 'Inverting...';
+  document.getElementById('invert-result').style.display = 'block';
+  document.getElementById('original-text').textContent = currentText;
+  document.getElementById('cosine-sim').textContent = '-';
+
+  const grid = document.getElementById('token-grid');
+  grid.innerHTML = '';
+
+  let prevTokens = [];
+
+  try {
+    const r = await fetch('/decode', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({embedding: currentEmbedding, steps: 32})
     });
 
-    const reader = dr.body.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let totalSteps = 32;
+    let stepCount = 0;
 
     while (true) {
       const {done, value} = await reader.read();
       if (done) break;
-      buf += dec.decode(value, {stream:true});
-      const lines = buf.split('\n');
-      buf = lines.pop();
+      buffer += decoder.decode(value, {stream: true});
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const evt = JSON.parse(line.slice(6));
-          handleStep(evt);
-        }
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') continue;
+
+        try {
+          const d = JSON.parse(raw);
+          stepCount++;
+
+          if (d.total_steps) totalSteps = d.total_steps;
+          const pct = Math.min(100, (stepCount / totalSteps) * 100);
+          document.getElementById('progress-fill').style.width = pct + '%';
+          document.getElementById('step-info').textContent = `step ${stepCount}/${totalSteps}`;
+
+          const tokens = d.tokens || [];
+          grid.innerHTML = '';
+          for (let i = 0; i < tokens.length; i++) {
+            const span = document.createElement('span');
+            const isMask = tokens[i] === '[MASK]' || tokens[i] === '<mask>';
+            const changed = prevTokens[i] !== tokens[i] && !isMask && prevTokens.length > 0;
+
+            span.className = 'token ' + (isMask ? 'masked' : (changed ? 'just-changed' : 'revealed'));
+            span.textContent = isMask ? '\u2588' : tokens[i];
+            grid.appendChild(span);
+          }
+          prevTokens = [...tokens];
+
+          if (d.cosine_sim !== undefined) {
+            document.getElementById('cosine-sim').textContent = d.cosine_sim.toFixed(4);
+          }
+          if (d.text) {
+            document.getElementById('recovered-text').textContent = d.text;
+          }
+        } catch(e) {}
       }
     }
+
+    document.getElementById('progress-fill').style.width = '100%';
+    document.getElementById('step-info').textContent = `done (${totalSteps} steps)`;
   } catch(e) {
     console.error(e);
-    $('decoded').textContent = 'Error: ' + e.message;
-  }
-  running = false;
-  $('goBtn').disabled = false;
-  $('goBtn').innerHTML = 'Invert &rarr;';
-}
-
-function showEmbedding(emb) {
-  $('embCard').style.display = '';
-  const canvas = $('embCanvas');
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width * 2;
-  canvas.height = rect.height * 2;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // Calculate stats
-  let mn = Infinity, mx = -Infinity, s2 = 0;
-  for (const v of emb) { mn=Math.min(mn,v); mx=Math.max(mx,v); s2+=v*v; }
-  $('embMin').textContent = mn.toFixed(3);
-  $('embMax').textContent = mx.toFixed(3);
-  $('embNorm').textContent = Math.sqrt(s2).toFixed(3);
-
-  // Create histogram
-  const numBins = 50;
-  const bins = new Array(numBins).fill(0);
-  const range = mx - mn;
-  
-  // Bin the data
-  for (const v of emb) {
-    let binIdx = Math.floor(((v - mn) / range) * (numBins - 1));
-    if (binIdx >= numBins) binIdx = numBins - 1;
-    bins[binIdx]++;
-  }
-
-  // Find max bin count for scaling
-  const maxCount = Math.max(...bins);
-
-  // Draw histogram
-  const w = canvas.width;
-  const h = canvas.height;
-  const barW = w / numBins;
-  const padding = 20;
-  const chartH = h - padding;
-
-  // Draw bars
-  for (let i = 0; i < numBins; i++) {
-    const barH = (bins[i] / maxCount) * chartH;
-    const x = i * barW;
-    const y = h - barH;
-    
-    // Gradient from accent to accent2
-    const t = i / numBins;
-    const r = Math.round(124 + t * (144 - 124));
-    const g = Math.round(106 + t * (97 - 106));
-    const b = Math.round(239 + t * (240 - 239));
-    
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(x, y, Math.ceil(barW) - 1, barH);
-  }
-
-  // Draw baseline
-  ctx.strokeStyle = '#d0d0d0';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, h - 0.5);
-  ctx.lineTo(w, h - 0.5);
-  ctx.stroke();
-}
-
-function initMaskGrid() {
-  const grid = $('tgrid');
-  grid.innerHTML = '';
-  for (let i=0; i<32; i++) {
-    const el = document.createElement('span');
-    el.className = 'tok masked';
-    el.textContent = '[MASK]';
-    el.id = 'tk'+i;
-    grid.appendChild(el);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Invert';
   }
 }
 
-function handleStep(evt) {
-  // progress
-  $('pbar').style.width = (evt.progress * 100) + '%';
-  $('stepInfo').textContent = `step ${evt.step+1} / ${evt.total}`;
-
-  // tokens
-  const tokens = evt.tokens;
-  for (let i=0; i<tokens.length; i++) {
-    const el = $('tk'+i);
-    if (!el) continue;
-    const tk = tokens[i];
-    el.textContent = tk.t;
-    if (tk.s === 'm') {
-      el.className = 'tok masked';
-    } else if (tk.s === 'c') {
-      el.className = 'tok changed';
-    } else {
-      el.className = 'tok revealed';
-    }
-  }
-
-  // decoded text
-  $('decoded').textContent = evt.text || '\u2014';
-
-  // final
-  if (evt.done) {
-    $('metricsRow').style.display = 'flex';
-    const sim = evt.cosine_similarity;
-    $('mCos').textContent = (sim * 100).toFixed(1) + '%';
-    $('mSteps').textContent = evt.step;
-    $('stepInfo').textContent = 'done';
-  }
-}
-
-// Enter key triggers run
-$('inp').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+// Auto-load random on page load
+window.addEventListener('load', randomSentence);
 </script>
 </body>
 </html>
