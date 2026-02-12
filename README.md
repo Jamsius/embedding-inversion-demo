@@ -111,12 +111,10 @@ This encodes the input text, then runs diffusion decoding to reconstruct it from
 ## Citation
 
 ```bibtex
-@techreport{xiao2025embeddinginversion,
-  author       = {Xiao, Han},
-  title        = {Embedding Inversion via Conditional Masked Diffusion Language Models},
-  institution  = {Jina AI by Elastic},
-  year         = {2025},
-  url          = {https://github.com/jina-ai/embedding-inversion-demo},
-  note         = {Live demo: https://embedding-inversion-demo.jina.ai}
+@article{xiao2026embedding,
+  title={Embedding Inversion via Conditional Masked Diffusion Language Models},
+  author={Xiao, Han},
+  journal={arXiv preprint arXiv:2602.11047},
+  year={2026}
 }
 ```
